@@ -150,6 +150,25 @@ int delete_entity (const string& addr, const string& table, const string& partit
 		addr + "DeleteEntity/" + table + "/" + partition + "/" + row)};
   return result.first;
 }
+/********************* 
+**CODE ADDED - BEGIN**
+**********************/
+pair<status_code,value> get_partition_entity (const string& addr, const string& table, const string& partition, const string& row){
+	pair<status_code,value> result {do_request(methods::GET, addr + table + "/" + partition + "/" + row) };
+	return result;
+}
+
+pair<status_code,value> spec_properties (const string& addr, const string& table, const string& prop, const string& pstring){
+	pair<status_code,value> result { do_request(methods::GET, addr + table, value::object(vector<pair<string,value>> {make_pair(prop, value::string(pstring))}))};
+	return result;
+}
+
+
+/********************
+**CODE ADDED - STOP**
+********************/
+
+
 
 /*
   A sample fixture that ensures TestTable exists, and
@@ -169,6 +188,7 @@ SUITE(GET) {
     static constexpr const char* row {"USA"};
     static constexpr const char* property {"Song"};
     static constexpr const char* prop_val {"RESPECT"};
+		static constexpr const char* row_def {"*"};
 
   public:
     GetFixture() {
@@ -188,7 +208,7 @@ SUITE(GET) {
       if (del_ent_result != status_codes::OK) {
 	throw std::exception();
       }
-
+	
       /*
 	In traditional unit testing, we might delete the table after every test.
 
@@ -245,14 +265,63 @@ SUITE(GET) {
 		  + string(GetFixture::table))};
     CHECK(result.second.is_array());
     CHECK_EQUAL(2, result.second.as_array().size());
+		
     /*
       Checking the body is not well-supported by UnitTest++, as we have to test
       independent of the order of returned values.
      */
     //CHECK_EQUAL(body.serialize(), string("{\"")+string(GetFixture::property)+ "\":\""+string(GetFixture::prop_val)+"\"}");
     CHECK_EQUAL(status_codes::OK, result.first);
+
+    // CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
+  }
+	/********************* 
+	**CODE ADDED - BEGIN**
+	**********************/
+	/*
+	A test of GET entities of specified partition
+	*/
+	TEST_FIXTURE(GetFixture, GetPartition) {
+    string partition {"Correy"};
+    string row {"Canada"};
+    string property {"Home"};
+    string prop_val {"Burnaby"};
+    int put_result {put_entity (GetFixture::addr, GetFixture::table, partition, row, property, prop_val)};
+    cerr << "put result " << put_result << endl;
+    assert (put_result == status_codes::OK);
+
+		pair<status_code,value> test_result { get_partition_entity(string(GetFixture::addr), string(GetFixture::table), partition, "*") };
+		
+    CHECK(test_result.second.is_array());
+    CHECK_EQUAL(1, test_result.second.as_array().size()); // This should be correct. I've only passed in one item to get from the table, as a result the array is only size 1. The GET all above has 2 entries, thus array.size()==2. 
+		// The only thing to check for is the JSON array actually contains the Partition, Row and Properties.
+		
+    CHECK_EQUAL(status_codes::OK, test_result.first);
+
     CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
   }
+	// UNFINISHED TEST FOR SECOND OPERATION
+	TEST_FIXTURE(GetFixture, GetEntityProperties){
+		string partition {"Correy"};
+    string row {"Canada"};
+    string property {"Home"};
+    string prop_val {"Burnaby"};
+    int put_result {put_entity (GetFixture::addr, GetFixture::table, partition, row, property, prop_val)};
+    cerr << "put result " << put_result << endl;
+    assert (put_result == status_codes::OK);
+		
+		pair<status_code,value> spec_test { spec_properties(GetFixture::addr, GetFixture::table, property, "*") };
+		    CHECK(spec_test.second.is_array());
+    // CHECK_EQUAL(1, test_result.second.as_array().size());
+			
+    CHECK_EQUAL(status_codes::OK, spec_test.first);
+
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
+		
+	}
+	/********************
+	**CODE ADDED - STOP**
+	********************/
 }
 
 /*

@@ -70,6 +70,15 @@ const string create_table {"CreateTable"};
 const string delete_table {"DeleteTable"};
 const string update_entity {"UpdateEntity"};
 const string delete_entity {"DeleteEntity"};
+/********************* 
+**CODE ADDED - BEGIN**
+**********************/
+const string add_properties {"AddProperties"};
+const string update_property {"UpdateProperty"};
+/******************** 
+**CODE ADDED - STOP**
+********************/
+
 
 /*
   Cache of opened tables
@@ -160,12 +169,44 @@ void handle_get(http_request message) {
     message.reply(status_codes::BadRequest);
     return;
   }
-
   cloud_table table {table_cache.lookup_table(paths[0])};
   if ( ! table.exists()) {
     message.reply(status_codes::NotFound);
     return;
   }
+	/********************* 
+	**CODE ADDED - BEGIN**
+	**********************/
+	if( get_json_body(message).size() > 0  ){
+		table_query query {};
+		table_query_iterator end;
+		table_query_iterator it = table.execute_query(query);
+		prop_vals_t keys;
+		vector<value> key_vec;
+		while(it != end){
+			/* // The answer might be here
+			table_entity::properties_type& properties = entity.properties();
+			for (const auto v : get_json_body(message)) {
+				properties[v.first] = entity_property {v.second};
+			}
+			*/
+			
+			/*
+			if(it->properties() == Properties passed in via JSON object ){
+				keys = { make_pair("Partition",value::string(it->partition_key())), make_pair("Row",value::string(it->row_key())) };
+				keys = get_properties(it->properties(), keys);
+				key_vec.push_back(value::object(keys));
+			}
+			*/
+			++it;
+		}
+		message.reply( status_codes::OK, value::array(key_vec) );
+		return;
+	
+	}
+	/******************** 
+	**CODE ADDED - STOP**
+	********************/
 
   // GET all entries in table
   if (paths.size() == 1) {
@@ -175,9 +216,7 @@ void handle_get(http_request message) {
     vector<value> key_vec;
     while (it != end) {
       cout << "Key: " << it->partition_key() << " / " << it->row_key() << endl;
-      prop_vals_t keys {
-	make_pair("Partition",value::string(it->partition_key())),
-	make_pair("Row", value::string(it->row_key()))};
+      prop_vals_t keys { make_pair("Partition",value::string(it->partition_key())), make_pair("Row", value::string(it->row_key())) };
       keys = get_properties(it->properties(), keys);
       key_vec.push_back(value::object(keys));
       ++it;
@@ -185,6 +224,46 @@ void handle_get(http_request message) {
     message.reply(status_codes::OK, value::array(key_vec));
     return;
   }
+	
+	/********************* 
+	**CODE ADDED - BEGIN**
+	**********************/
+	// GET all entities from a specific partition
+	if( paths[2] == "*" ){
+			table_query query {};
+			table_query_iterator end;
+			table_query_iterator it = table.execute_query(query);
+			prop_vals_t keys;
+			while(it != end){ // This while loop iterates through the table until it finds the requested partition
+				if( paths[1] == it->partition_key() ){ 
+					cout << "Partition: " << it->partition_key() << endl; 
+					cout << "Row: " << it->row_key() << endl;
+					keys = { make_pair("Partition",value::string(it->partition_key())), make_pair("Row",value::string(it->row_key())) };
+					keys = get_properties(it->properties(), keys);
+				}
+				++it;
+			}
+			
+			if( keys.empty() ){ // In the case where the requested partition is not a part of the table. prop_vals_t is a vector; empty() is a function of the vector class
+				message.reply(status_codes::NotFound);
+				return;
+			}
+			
+			vector<value> key_vec;
+			key_vec.push_back(value::object(keys));
+			
+			message.reply(status_codes::OK, value::array(key_vec));
+	}
+
+	// Notes from class
+	// put_entity("http://localhost:34568","TestTable","Canada","Trudeau,J","elected","2015"); -- THIS IS DONE CLIENT SIDE (tester.cpp)
+	// TestTable
+	// Partition	Row					Properties
+	// Canada			Trudeau,J 	elected:2015
+	
+	/******************** 
+	**CODE ADDED - STOP**
+	********************/
 
   // GET specific entry: Partition == paths[1], Row == paths[2]
   table_operation retrieve_operation {table_operation::retrieve_entity(paths[1], paths[2])};
@@ -204,6 +283,7 @@ void handle_get(http_request message) {
     message.reply(status_codes::OK, value::object(values));
   else
     message.reply(status_codes::OK);
+	
 }
 
 /*
@@ -228,12 +308,12 @@ void handle_post(http_request message) {
     bool created {table.create_if_not_exists()};
     cout << "Administrative table URI " << table.uri().primary_uri().to_string() << endl;
     if (created)
-      message.reply(status_codes::Created);
+      message.reply(status_codes::Created); // Table is created (RC: 201)
     else
-      message.reply(status_codes::Accepted);
+      message.reply(status_codes::Accepted); // Table already exists; unchanged (RC: 202)
   }
   else {
-    message.reply(status_codes::BadRequest);
+    message.reply(status_codes::BadRequest); // No table name given (RC: 400)
   }
 }
 
@@ -274,6 +354,14 @@ void handle_put(http_request message) {
   else {
     message.reply(status_codes::BadRequest);
   }
+	
+	if( paths[0] == update_property ){
+		
+	}
+	
+	if( paths[0] == add_properties ){
+		
+	}
 }
 
 /*
@@ -285,8 +373,8 @@ void handle_delete(http_request message) {
   auto paths = uri::split_path(path);
   // Need at least an operation and table name
   if (paths.size() < 2) {
-	message.reply(status_codes::BadRequest);
-	return;
+		message.reply(status_codes::BadRequest);
+		return;
   }
 
   string table_name {paths[1]};
@@ -336,7 +424,7 @@ void handle_delete(http_request message) {
   Wait for a carriage return, then shut the server down.
  */
 int main (int argc, char const * argv[]) {
-  http_listener listener {def_url};
+  http_listener listener {def_url}; // Acknowledges the requests sent to the server; If the below did not exist, it would receive the requests but wouldn't do anything
   listener.support(methods::GET, &handle_get);
   listener.support(methods::POST, &handle_post);
   listener.support(methods::PUT, &handle_put);
