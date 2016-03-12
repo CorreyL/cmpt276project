@@ -177,7 +177,7 @@ void handle_get(http_request message) {
 	/********************* 
 	**CODE ADDED - BEGIN**
 	**********************/
-	if( get_json_body(message).size() > 0 ){
+	if( get_json_body(message).size() > 0 ){ // Get all entities containing all specified properties
 		table_query query {};
 		table_query_iterator end;
 		table_query_iterator it = table.execute_query(query);
@@ -191,23 +191,25 @@ void handle_get(http_request message) {
 		unordered_map<string,string> stored_message = {
 			{"Genre","Indie"}
 		};
-		
+
 		while(it != end){
 			equal = 0;
 			cout << "Partition: " << it->partition_key() << " / Row: " << it->row_key() << endl;
+			
 			const table_entity::properties_type& properties = it->properties();
 		  for (auto prop_it = properties.begin(); prop_it != properties.end(); ++prop_it)
 			{
         cout << ", " << prop_it->first << ": " << prop_it->second.str() << endl;
 				unordered_map<string,string>::const_iterator got = stored_message.find(prop_it->first);
-				if( got != stored_message.end() ){
-					cout << "We found it!" << endl;
+				if( got != stored_message.end() ){ // A property from the JSON body was found in the entity
 					equal++;
 				}
 			}
 			
-			if( equal == stored_message.size() ){
-				cout << "We're inside here!" << endl;
+			if( equal == stored_message.size() ){ // All properties from the JSON body were found in the entity
+					keys = { make_pair("Partition",value::string(it->partition_key())), make_pair("Row",value::string(it->row_key())) };
+					keys = get_properties(it->properties(), keys);
+					key_vec.push_back(value::object(keys));
 			}
 			
 			++it;

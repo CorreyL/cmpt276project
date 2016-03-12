@@ -302,7 +302,7 @@ SUITE(GET) {
   }
 	
 	TEST_FIXTURE(GetFixture, GetEntityProperties){
-		string partition {"Quinn,Tegan"};
+		string partition {"Quin,Tegan"};
     string row {"Canada"};
     string property {"Genre"};
     string prop_val {"Indie"};
@@ -311,8 +311,9 @@ SUITE(GET) {
     assert (put_result == status_codes::OK);
 		
 		pair<status_code,value> spec_test { spec_properties(GetFixture::addr, GetFixture::table, property, "*") };
-		// CHECK(spec_test.second.is_array());
-    // CHECK_EQUAL(1, test_result.second.as_array().size());
+		
+		CHECK(spec_test.second.is_array());
+    CHECK_EQUAL(1, spec_test.second.as_array().size());
 			
     CHECK_EQUAL(status_codes::OK, spec_test.first);
 
