@@ -177,27 +177,39 @@ void handle_get(http_request message) {
 	/********************* 
 	**CODE ADDED - BEGIN**
 	**********************/
-	if( get_json_body(message).size() > 0  ){
+	if( get_json_body(message).size() > 0 ){
 		table_query query {};
 		table_query_iterator end;
 		table_query_iterator it = table.execute_query(query);
+		table_entity entity;
 		prop_vals_t keys;
 		vector<value> key_vec;
+		
+		int equal {0};
+		// unordered_map<string,string> stored_message = get_json_body(message);
+		
+		unordered_map<string,string> stored_message = {
+			{"Genre","Indie"}
+		};
+		
 		while(it != end){
-			/* // The answer might be here
-			table_entity::properties_type& properties = entity.properties();
-			for (const auto v : get_json_body(message)) {
-				properties[v.first] = entity_property {v.second};
+			equal = 0;
+			cout << "Partition: " << it->partition_key() << " / Row: " << it->row_key() << endl;
+			const table_entity::properties_type& properties = it->properties();
+		  for (auto prop_it = properties.begin(); prop_it != properties.end(); ++prop_it)
+			{
+        cout << ", " << prop_it->first << ": " << prop_it->second.str() << endl;
+				unordered_map<string,string>::const_iterator got = stored_message.find(prop_it->first);
+				if( got != stored_message.end() ){
+					cout << "We found it!" << endl;
+					equal++;
+				}
 			}
-			*/
 			
-			/*
-			if(it->properties() == Properties passed in via JSON object ){
-				keys = { make_pair("Partition",value::string(it->partition_key())), make_pair("Row",value::string(it->row_key())) };
-				keys = get_properties(it->properties(), keys);
-				key_vec.push_back(value::object(keys));
+			if( equal == stored_message.size() ){
+				cout << "We're inside here!" << endl;
 			}
-			*/
+			
 			++it;
 		}
 		message.reply( status_codes::OK, value::array(key_vec) );
@@ -335,6 +347,21 @@ void handle_put(http_request message) {
     message.reply(status_codes::NotFound);
     return;
   }
+	
+	if( paths[0] == add_properties ){
+		table_query query {};
+		table_query_iterator end;
+		table_query_iterator it = table.execute_query(query);
+		prop_vals_t keys;
+		while(it != end){ // This while loop iterates through each table entity
+			
+			++it;
+		}
+	}
+	
+	if( paths[0] == update_property ){
+		
+	}
 
   table_entity entity {paths[2], paths[3]};
 
@@ -354,14 +381,7 @@ void handle_put(http_request message) {
   else {
     message.reply(status_codes::BadRequest);
   }
-	
-	if( paths[0] == update_property ){
-		
-	}
-	
-	if( paths[0] == add_properties ){
-		
-	}
+
 }
 
 /*
