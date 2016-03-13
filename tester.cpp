@@ -175,7 +175,7 @@ pair<status_code,value> spec_properties (const string& addr, const string& table
   with the property "Song": "RESPECT".
 
   The entity is deleted when the fixture shuts down
-  but the table is left. See the comments in the code
+  but the table is left. See the comments in the cod
   for the reason for this design.
  */
 SUITE(GET) {
@@ -229,7 +229,6 @@ SUITE(GET) {
   /*
     A test of GET of a single entity
    */
-	
   TEST_FIXTURE(GetFixture, GetSingle) {
     pair<status_code,value> result {
       do_request (methods::GET,
@@ -246,7 +245,6 @@ SUITE(GET) {
 		  result.second.serialize());
       CHECK_EQUAL(status_codes::OK, result.first);
     }
-
   /*
     A test of GET all table entries
    */
@@ -282,26 +280,70 @@ SUITE(GET) {
 	A test of GET entities of specified partition
 	*/
 	TEST_FIXTURE(GetFixture, GetPartition) {
-    string partition {"Correy"};
-    string row {"Canada"};
-    string property {"Home"};
-    string prop_val {"Burnaby"};
+    string partition {"Video_Game"};
+    string row {"The_Witcher_3"};
+    string property {"Rating"};
+    string prop_val {"10_Out_Of_10"};
+
+    //Test to make sure if the partition does not exist, a 404 NotFound code is recieved
+    pair<status_code,value> test_result {get_partition_entity(string(GetFixture::addr), string(GetFixture::table), partition, "*")};
+    CHECK_EQUAL(status_codes::NotFound, test_result.first);
+
+    //Add first element, check GET works for it's partition
     int put_result {put_entity (GetFixture::addr, GetFixture::table, partition, row, property, prop_val)};
     cerr << "put result " << put_result << endl;
     assert (put_result == status_codes::OK);
 
-		pair<status_code,value> test_result { get_partition_entity(string(GetFixture::addr), string(GetFixture::table), partition, "*") };
-		
+		test_result = get_partition_entity(string(GetFixture::addr), string(GetFixture::table), partition, "*");
     CHECK(test_result.second.is_array());
-    CHECK_EQUAL(1, test_result.second.as_array().size()); // This should be correct. I've only passed in one item to get from the table, as a result the array is only size 1. The GET all above has 2 entries, thus array.size()==2. 
-		// The only thing to check for is the JSON array actually contains the Partition, Row and Properties.
-		
+    CHECK_EQUAL(1, test_result.second.as_array().size());
     CHECK_EQUAL(status_codes::OK, test_result.first);
 
-    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
+    //Add a second element, check the GET returns both elements in the partition
+    row = "Fire_Emblem";
+    prop_val = "8_Out_Of_10";
+
+    put_result = put_entity (GetFixture::addr, GetFixture::table, partition, row, property, prop_val);
+    cerr << "put result " << put_result << endl;
+    assert (put_result == status_codes::OK);
+
+    test_result = get_partition_entity(string(GetFixture::addr), string(GetFixture::table), partition, "*");
+    CHECK(test_result.second.is_array());
+    CHECK_EQUAL(2, test_result.second.as_array().size());
+    CHECK_EQUAL(status_codes::OK, test_result.first);
+
+    //Add a third element that is NOT a member of the same partition, ensure that it is not returned with the other two
+    put_result = put_entity (GetFixture::addr, GetFixture::table, "Aidan", "Canada", "Home", "Surrey");
+    cerr << "put result " << put_result << endl;
+    assert (put_result == status_codes::OK);
+
+    test_result = get_partition_entity(string(GetFixture::addr), string(GetFixture::table), partition, "*");
+    CHECK(test_result.second.is_array());
+    CHECK_EQUAL(2, test_result.second.as_array().size());
+    CHECK_EQUAL(status_codes::OK, test_result.first);
+
+    //Add a fourth and final element to ensure that adding a non-partition element does not mess up gets of the next (partitioned) elements
+    row = "Call_Of_Duty";
+    prop_val = "5_Out_Of_10";
+
+    put_result = put_entity (GetFixture::addr, GetFixture::table, partition, row, property, prop_val);
+    cerr << "put result " << put_result << endl;
+    assert (put_result == status_codes::OK);
+
+    test_result = get_partition_entity(string(GetFixture::addr), string(GetFixture::table), partition, "*");
+    CHECK(test_result.second.is_array());
+    CHECK_EQUAL(3, test_result.second.as_array().size());
+    CHECK_EQUAL(status_codes::OK, test_result.first);
+
+
+    //Clear Table
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, "The_Witcher_3"));
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, "Fire_Emblem"));
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, "Aidan", "Canada"));
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, "Call_Of_Duty"));
   }
-	
-	TEST_FIXTURE(GetFixture, GetEntityProperties){
+
+	TEST_FIXTURE(GetFixture, GetEntityWithProperties){
 		string partition {"Quin,Tegan"};
     string row {"Canada"};
     string property {"Genre"};
@@ -318,8 +360,8 @@ SUITE(GET) {
     CHECK_EQUAL(status_codes::OK, spec_test.first);
 
     CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
-		
 	}
+
 	/********************
 	**CODE ADDED - STOP**
 	********************/
