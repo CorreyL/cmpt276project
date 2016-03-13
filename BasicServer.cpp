@@ -247,9 +247,7 @@ void handle_get(http_request message) {
 			prop_vals_t keys;
 			while(it != end){ // This while loop iterates through the table until it finds the requested partition
 				if( paths[1] == it->partition_key() ){
-					cout << "****GET ALL ENTITIES FROM A SPECIFIC PARTITION" << endl;
-					cout << "Partition: " << it->partition_key() << endl; 
-					cout << "Row: " << it->row_key() << endl;
+					cout << "GET: " << it->partition_key() << " / " << it->row_key() << endl; 
 					keys = { make_pair("Partition",value::string(it->partition_key())), make_pair("Row",value::string(it->row_key())) };
 					keys = get_properties(it->properties(), keys);
 					key_vec.push_back(value::object(keys));
@@ -263,6 +261,7 @@ void handle_get(http_request message) {
 			}
 			
 			message.reply(status_codes::OK, value::array(key_vec));
+			return;
 	}
 	
 	/******************** 
@@ -340,6 +339,9 @@ void handle_put(http_request message) {
     return;
   }
 	
+	/********************* 
+	**CODE ADDED - BEGIN**
+	**********************/
 	if( paths[0] == add_properties ){
 		unordered_map<string,string> stored_message = get_json_body(message);
 		if(stored_message.size() == 0) message.reply(status_codes::BadRequest); // No JSON object passed in
@@ -384,7 +386,11 @@ void handle_put(http_request message) {
 	if( paths[0] == update_property ){
 		
 	}
-
+	
+	/******************** 
+	**CODE ADDED - STOP**
+	********************/
+	
   table_entity entity {paths[2], paths[3]};
 
   // Update entity
