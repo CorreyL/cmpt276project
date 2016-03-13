@@ -288,8 +288,7 @@ SUITE(GET) {
     string row {"The_Witcher_3"};
     string property {"Rating"};
     string prop_val {"10_Out_Of_10"};
-		
-		
+				
     //Test to make sure if the partition does not exist, a 404 NotFound code is recieved
     pair<status_code,value> test_result {get_partition_entity(string(GetFixture::addr), string(GetFixture::table), partition, "*")};
     CHECK_EQUAL(status_codes::NotFound, test_result.first);
@@ -311,16 +310,25 @@ SUITE(GET) {
   }
 	
 	TEST_FIXTURE(GetFixture, GetEntityProperties){
+		string partition = "Video_Game";
+		string row {"The_Witcher_3"};
+    string property {"Rating"};
+    string prop_val {"10_Out_Of_10"};
+		
+		int put_result {put_entity (GetFixture::addr, GetFixture::table, partition, row, property, prop_val)};
+    cerr << "put result " << put_result << endl;
+    assert (put_result == status_codes::OK);
+		
 		pair<status_code,value> test_result = get_partition_entity(string(GetFixture::addr), string(GetFixture::table), partition, "*");
     CHECK(test_result.second.is_array());
     CHECK_EQUAL(1, test_result.second.as_array().size());
     CHECK_EQUAL(status_codes::OK, test_result.first);
 
     //Add a second element, check the GET returns both elements in the partition
-    string row = "Fire_Emblem";
-    string prop_val = "8_Out_Of_10";
+		row = "Fire_Emblem";
+    prop_val = "8_Out_Of_10";
 
-    int put_result = put_entity (GetFixture::addr, GetFixture::table, partition, row, property, prop_val);
+    put_result = put_entity (GetFixture::addr, GetFixture::table, partition, row, property, prop_val);
     cerr << "put result " << put_result << endl;
     assert (put_result == status_codes::OK);
 
