@@ -243,13 +243,16 @@ void handle_get(http_request message) {
 			table_query query {};
 			table_query_iterator end;
 			table_query_iterator it = table.execute_query(query);
+			vector<value> key_vec;
 			prop_vals_t keys;
 			while(it != end){ // This while loop iterates through the table until it finds the requested partition
-				if( paths[1] == it->partition_key() ){ 
+				if( paths[1] == it->partition_key() ){
+					cout << "****GET ALL ENTITIES FROM A SPECIFIC PARTITION" << endl;
 					cout << "Partition: " << it->partition_key() << endl; 
 					cout << "Row: " << it->row_key() << endl;
 					keys = { make_pair("Partition",value::string(it->partition_key())), make_pair("Row",value::string(it->row_key())) };
 					keys = get_properties(it->properties(), keys);
+					key_vec.push_back(value::object(keys));
 				}
 				++it;
 			}
@@ -258,9 +261,6 @@ void handle_get(http_request message) {
 				message.reply(status_codes::NotFound);
 				return;
 			}
-			
-			vector<value> key_vec;
-			key_vec.push_back(value::object(keys));
 			
 			message.reply(status_codes::OK, value::array(key_vec));
 	}
