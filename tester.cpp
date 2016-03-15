@@ -158,7 +158,7 @@ pair<status_code,value> get_partition_entity (const string& addr, const string& 
 	return result;
 }
 
-pair<status_code,value> spec_properties (const string& addr, const string& table, const string& prop, const string& pstring){
+pair<status_code,value> get_Entities_from_properties (const string& addr, const string& table, const string& prop, const string& pstring){
 	pair<status_code,value> result { do_request(methods::GET, addr + table, value::object(vector<pair<string,value>> {make_pair(prop, value::string(pstring))}))};
 	return result;
 }
@@ -166,6 +166,21 @@ pair<status_code,value> spec_properties (const string& addr, const string& table
 pair<status_code,value> get_spec_properties_entity (const string& addr, const string& table, const value& properties){
   pair<status_code,value> result { do_request(methods::GET, addr + table, properties)};
   return result;
+}
+
+/*
+  Utility to put an entity with no properties
+
+  addr: Prefix of the URI (protocol, address, and port)
+  table: Table in which to insert the entity
+  partition: Partition of the entity 
+  row: Row of the entity
+ */
+int put_entity_no_properties(const string& addr, const string& table, const string& partition, const string& row){
+  pair<status_code,value> result {
+    do_request (methods::PUT,
+    addr + "UpdateEntity/" + table + "/" + partition + "/" + row)};
+  return result.first;
 }
 
 /********************
@@ -314,7 +329,7 @@ SUITE(GET) {
     CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
   }
 	
-	TEST_FIXTURE(GetFixture, GetEntityProperties){
+	TEST_FIXTURE(GetFixture, GetBigPartition){
 		string partition = "Video_Game";
 		string row {"The_Witcher_3"};
     string property {"Rating"};
@@ -353,10 +368,11 @@ SUITE(GET) {
     CHECK_EQUAL(status_codes::OK, test_result.first);
 
     //Add a fourth and final element to ensure that adding a non-partition element does not mess up gets of the next (partitioned) elements
+    //Also tests if it can return an entity with no properties
     row = "Call_Of_Duty";
     prop_val = "5_Out_Of_10";
 
-    put_result = put_entity (GetFixture::addr, GetFixture::table, partition, row, property, prop_val);
+    put_result = put_entity_no_properties(GetFixture::addr, GetFixture::table, partition, row);
     cerr << "put result " << put_result << endl;
     assert (put_result == status_codes::OK);
 
@@ -382,7 +398,7 @@ SUITE(GET) {
     cerr << "put result " << put_result << endl;
     assert (put_result == status_codes::OK);
 		
-		pair<status_code,value> spec_test { spec_properties(GetFixture::addr, GetFixture::table, property, "*") };
+		pair<status_code,value> spec_test { get_Entities_from_properties(GetFixture::addr, GetFixture::table, property, "*") };
 		
 		CHECK(spec_test.second.is_array());
     CHECK_EQUAL(1, spec_test.second.as_array().size());
@@ -393,6 +409,53 @@ SUITE(GET) {
 
 	}
 
+  TEST_FIXTURE(GetFixture, AddPropertyToAll){
+
+    //Add an entity with a property, one with a property that is different than the first one,
+    //one without properties, and one with no properties in a different partition
+    CHECK_EQUAL(status_codes::OK, put_entity(GetFixture::addr, GetFixture::table, "Humans", "PatientZero", "ZombieVirus", "Infected"));
+    CHECK_EQUAL(status_codes::OK, put_entity(GetFixture::addr, GetFixture::table, "Humans", "Michael", "HasHair", "Yup"));
+    CHECK_EQUAL(status_codes::OK, put_entity_no_properties(GetFixture::addr, GetFixture::table, "Humans", "Aidan"));
+    CHECK_EQUAL(status_codes::OK, put_entity_no_properties(GetFixture::addr, GetFixture::table, "Squirrels", "Chuck"));
+
+    //Check that only one entity has the same property as the first one (it's the first entity that should)
+    pair<status_code,value> first_test{get_Entities_from_properties(GetFixture::addr, GetFixture::table, "ZombieVirus", "Infected")};
+    CHECK_EQUAL(1, first_test.second.as_array().size());
+
+    //Update all entities to have the same one as the first
+    pair<status_code,value> result = {
+    do_request (methods::PUT,
+    string(GetFixture::addr) + "AddProperty/" + string(GetFixture::table), value::object (vector<pair<string,value>>
+             {make_pair("ZombieVirus", value::string("Infected"))}))};
+
+    //Check that all entities now have the added property (It's 5 because Franklin Aretha got infected too, poor guy)
+    pair<status_code,value> second_test = {get_Entities_from_properties(GetFixture::addr, GetFixture::table, "ZombieVirus", "Infected")};
+    CHECK_EQUAL(5, second_test.second.as_array().size());
+
+
+    //Check that an invalid AddProperty gets a 400 code
+    //Note: this is commented out because it causes a segmentation fault in the server, which results in things not being deleted properly. We do want this test in here.
+    //If a segmentation fault occurs, re-comment this out and then run tests again so the deletes below can run properly.
+    /*  
+    //Invalid because no table specified
+    result = {
+    do_request (methods::PUT,
+    string(GetFixture::addr) + "AddProperty/")};
+    CHECK_EQUAL(status_codes::BadRequest, result.first);
+
+    //Invalid because no JSON body
+    result = {
+    do_request (methods::PUT,
+    string(GetFixture::addr) + "AddProperty/" + string(GetFixture::table))};
+    CHECK_EQUAL(status_codes::BadRequest, result.first);
+    */
+
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, "Humans", "PatientZero"));
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, "Humans", "Michael"));
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, "Humans", "Aidan"));
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, "Squirrels", "Chuck"));
+  }
+  
   /*
   Get all entities with specific properties
   */

@@ -73,7 +73,7 @@ const string delete_entity {"DeleteEntity"};
 /********************* 
 **CODE ADDED - BEGIN**
 **********************/
-const string add_properties {"AddProperties"};
+const string add_property {"AddProperty"};
 const string update_property {"UpdateProperty"};
 /******************** 
 **CODE ADDED - STOP**
@@ -328,7 +328,9 @@ void handle_put(http_request message) {
   cout << endl << "**** PUT " << path << endl;
   auto paths = uri::split_path(path);
   // Need at least an operation, table name, partition, and row
-  if (paths.size() < 4) {
+
+
+  if (paths.size() < 2) {
     message.reply(status_codes::BadRequest);
     return;
   }
@@ -342,7 +344,7 @@ void handle_put(http_request message) {
 	/********************* 
 	**CODE ADDED - BEGIN**
 	**********************/
-	if( paths[0] == add_properties ){
+	if( paths[0] == add_property ){
 		unordered_map<string,string> stored_message = get_json_body(message);
 		if(stored_message.size() == 0) message.reply(status_codes::BadRequest); // No JSON object passed in
 		table_query query {};
@@ -352,7 +354,7 @@ void handle_put(http_request message) {
 		
 		table_entity entity;
 		bool flag {false};
-		
+
 		while(it != end){ // This while loop iterates through each table entity
 			entity = { it->partition_key(), it->row_key() };
 			table_entity::properties_type& properties = entity.properties();
@@ -362,7 +364,7 @@ void handle_put(http_request message) {
 			{
 				unordered_map<string,string>::const_iterator got = stored_message.find(prop_it->first);
 				if( got != stored_message.end() ){ // A property from the JSON body was found in the entity
-					properties[prop_it->first] = entity_property {got->second};
+					//properties[prop_it->first] = entity_property {got->second};
 					prop_it->second = got->second;
 					flag = true;
 				}
@@ -384,7 +386,33 @@ void handle_put(http_request message) {
 	}
 	
 	if( paths[0] == update_property ){
+		/*
+		unordered_map<string,string> stored_message = get_json_body(message);
+		if(stored_message.size() == 0) message.reply(status_codes::BadRequest); // No JSON object passed in
+		table_query query {};
+		table_query_iterator end;
+		table_query_iterator it = table.execute_query(query);
+		prop_vals_t keys;
+		table_entity entity;
 		
+		while(it != end){ // This while loop iterates through each table entity
+			entity = { it->partition_key(), it->row_key() };
+			table_entity::properties_type& properties = entity.properties();
+			
+			for (auto prop_it = properties.begin(); prop_it != properties.end(); ++prop_it) // Cycles through the properties of the current entity
+			{
+				unordered_map<string,string>::const_iterator got = stored_message.find(prop_it->first);
+				if( got != stored_message.end() ){ // A property from the JSON body was found in the entity
+					//properties[prop_it->first] = entity_property {got->second};
+					prop_it->second = got->second;
+				}
+			}
+			
+			++it;
+		}
+		*/
+		message.reply(status_codes::OK);
+		return;
 	}
 	
 	/******************** 
