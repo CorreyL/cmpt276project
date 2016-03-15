@@ -158,7 +158,7 @@ pair<status_code,value> get_partition_entity (const string& addr, const string& 
 	return result;
 }
 
-pair<status_code,value> get_Entities_from_properties (const string& addr, const string& table, const string& prop, const string& pstring){
+pair<status_code,value> get_Entities_from_property (const string& addr, const string& table, const string& prop, const string& pstring){
 	pair<status_code,value> result { do_request(methods::GET, addr + table, value::object(vector<pair<string,value>> {make_pair(prop, value::string(pstring))}))};
 	return result;
 }
@@ -398,7 +398,7 @@ SUITE(GET) {
     cerr << "put result " << put_result << endl;
     assert (put_result == status_codes::OK);
 		
-		pair<status_code,value> spec_test { get_Entities_from_properties(GetFixture::addr, GetFixture::table, property, "*") };
+		pair<status_code,value> spec_test { get_Entities_from_property(GetFixture::addr, GetFixture::table, property, "*") };
 		
 		CHECK(spec_test.second.is_array());
     CHECK_EQUAL(1, spec_test.second.as_array().size());
@@ -431,7 +431,7 @@ SUITE(GET) {
     //Check that only one entity has the same property as the first one (it's the first entity that should)
     property = "ZombieVirus";
     prop_val = "Infected";
-    pair<status_code,value> first_test{get_Entities_from_properties(GetFixture::addr, GetFixture::table, property, prop_val)};
+    pair<status_code,value> first_test{get_Entities_from_property(GetFixture::addr, GetFixture::table, property, prop_val)};
     CHECK_EQUAL(1, first_test.second.as_array().size());
 
     //Update all entities to have the same one as the first
@@ -441,7 +441,7 @@ SUITE(GET) {
              {make_pair(property, value::string(prop_val))}))};
 
     //Check that all entities now have the added property (It's 5 because Franklin Aretha got infected too, poor guy)
-    pair<status_code,value> second_test = {get_Entities_from_properties(GetFixture::addr, GetFixture::table, property, prop_val)};
+    pair<status_code,value> second_test = {get_Entities_from_property(GetFixture::addr, GetFixture::table, property, prop_val)};
     CHECK_EQUAL(5, second_test.second.as_array().size());
 
 
