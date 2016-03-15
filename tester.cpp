@@ -417,11 +417,23 @@ SUITE(GET) {
     pair<status_code,value> spec_test {spec_properties(GetFixture::addr, GetFixture::table, "ZombieVirus", "Infected")};
     CHECK_EQUAL(1, spec_test.second.as_array().size());
 
-    //INSERT ADD ZOMBIE VIRUS TO ALL LINE HERE
+    //Update all entities to have the same one as the first
+    pair<status_code,value> result = {
+    do_request (methods::PUT,
+    string(GetFixture::addr) + "AddProperty/" + "ZombieVirus" + "/" + "Infected")};
 
     //Check that all entities now have the added property
     spec_test = {spec_properties(GetFixture::addr, GetFixture::table, "ZombieVirus", "Infected")};
     CHECK_EQUAL(4, spec_test.second.as_array().size());
+
+    //Check that an invalid AddProperty gets a 400 code
+    //Note: this is commented out because it causes a segmentation fault in the server, which results in things not being deleted properly. We do want this test in here.
+    //If a segmentation fault occurs, re-comment this out and then run tests again so the deletes below can run properly.
+    //result = {
+    //do_request (methods::PUT,
+    //string(GetFixture::addr) + "AddProperty/")};
+    //CHECK_EQUAL(status_codes::BadRequest, spec_test.first);
+
 
     CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, "Humans", "PatientZero"));
     CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, "Humans", "Michael"));

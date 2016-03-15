@@ -73,7 +73,7 @@ const string delete_entity {"DeleteEntity"};
 /********************* 
 **CODE ADDED - BEGIN**
 **********************/
-const string add_properties {"AddProperties"};
+const string add_property {"AddProperty"};
 const string update_property {"UpdateProperty"};
 /******************** 
 **CODE ADDED - STOP**
@@ -335,7 +335,7 @@ void handle_put(http_request message) {
     return;
   }
   */
-  
+
   cloud_table table {table_cache.lookup_table(paths[1])};
   if ( ! table.exists()) {
     message.reply(status_codes::NotFound);
@@ -345,7 +345,7 @@ void handle_put(http_request message) {
 	/********************* 
 	**CODE ADDED - BEGIN**
 	**********************/
-	if( paths[0] == add_properties ){
+	if( paths[0] == add_property ){
 		unordered_map<string,string> stored_message = get_json_body(message);
 		if(stored_message.size() == 0) message.reply(status_codes::BadRequest); // No JSON object passed in
 		table_query query {};
