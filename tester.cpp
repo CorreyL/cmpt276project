@@ -163,6 +163,11 @@ pair<status_code,value> spec_properties (const string& addr, const string& table
 	return result;
 }
 
+pair<status_code,value> get_spec_properties_entity (const string& addr, const string& table, const value& properties){
+  pair<status_code,value> result { do_request(methods::GET, addr + table, properties)};
+  return result;
+}
+
 /********************
 **CODE ADDED - STOP**
 ********************/
@@ -388,7 +393,113 @@ SUITE(GET) {
 
 	}
 
-	}
+  /*
+  Get all entities with specific properties
+  */
+  TEST_FIXTURE(GetFixture, GetEntityWithSpecProperties){
+    string partition {"Cat"};
+    string row {"Domestic"};
+    string property {"Cute"};
+    string prop_val {"10/10"};
+
+    int put_result {put_entity (GetFixture::addr, GetFixture::table, partition, row, property, prop_val)};
+    cerr << "put result " << put_result << endl;
+    assert (put_result == status_codes::OK);
+
+    property = "Huggable";
+    prop_val = "8/10";
+
+    put_result = put_entity (GetFixture::addr, GetFixture::table, partition, row, property, prop_val);
+    cerr << "put result " << put_result << endl;
+    assert (put_result == status_codes::OK);
+
+    property = "Furball";
+    prop_val = "11/10";
+
+    put_result = put_entity (GetFixture::addr, GetFixture::table, partition, row, property, prop_val);
+    cerr << "put result " << put_result << endl;
+    assert (put_result == status_codes::OK);
+
+    pair<status_code,value> test_result { get_spec_properties_entity(GetFixture::addr, GetFixture::table, 
+      value::object(vector<pair<string,value>> {
+        make_pair("Cute", value::string("*")),
+        make_pair("Huggable", value::string("*"))
+    }))};
+
+    CHECK(test_result.second.is_array());
+    CHECK_EQUAL(1, test_result.second.as_array().size());
+    CHECK_EQUAL(status_codes::OK, test_result.first);
+    
+    // //Add another entity with only one specific property
+    partition = "Bunny";
+    row = "Wild";
+    property = "Cute";
+    prop_val = "8/10";
+
+    put_result = put_entity (GetFixture::addr, GetFixture::table, partition, row, property, prop_val);
+    cerr << "put result " << put_result << endl;
+    assert (put_result == status_codes::OK);
+
+    test_result = get_spec_properties_entity(GetFixture::addr, GetFixture::table, 
+      value::object(vector<pair<string,value>> {
+        make_pair("Cute", value::string("*")),
+        make_pair("Huggable", value::string("*"))
+    }));
+
+    CHECK(test_result.second.is_array());
+    CHECK_EQUAL(1, test_result.second.as_array().size());
+    CHECK_EQUAL(status_codes::OK, test_result.first);
+
+    //Add another entity with both specific property
+    row = "Domestic";
+    property = "Huggable";
+    prop_val = "8.5/10";
+
+    put_result = put_entity (GetFixture::addr, GetFixture::table, partition, row, property, prop_val);
+    cerr << "put result " << put_result << endl;
+    assert (put_result == status_codes::OK);
+
+    property = "Cute";
+    prop_val = "6/10";
+
+    put_result = put_entity (GetFixture::addr, GetFixture::table, partition, row, property, prop_val);
+    cerr << "put result " << put_result << endl;
+    assert (put_result == status_codes::OK);
+
+    test_result = get_spec_properties_entity(GetFixture::addr, GetFixture::table, 
+      value::object(vector<pair<string,value>> {
+        make_pair("Cute", value::string("*")),
+        make_pair("Huggable", value::string("*"))
+    }));
+
+    CHECK(test_result.second.is_array());
+    CHECK_EQUAL(2, test_result.second.as_array().size());
+    CHECK_EQUAL(status_codes::OK, test_result.first);
+
+    //Finially add another entity without any specific property
+    partition = "Dog";
+    row = "Wild";
+    property = "Tough";
+    prop_val = "9/10";
+
+    put_result = put_entity (GetFixture::addr, GetFixture::table, partition, row, property, prop_val);
+    cerr << "put result " << put_result << endl;
+    assert (put_result == status_codes::OK);
+
+    test_result = get_spec_properties_entity(GetFixture::addr, GetFixture::table, 
+      value::object(vector<pair<string,value>> {
+        make_pair("Cute", value::string("*")),
+        make_pair("Huggable", value::string("*"))
+    }));
+
+    //Cleanup tables
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, "Cat", "Domestic"));
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, "Bunny", "Wild"));
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, "Bunny", "Domestic"));
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, "Dog", "Wild"));
+  }
+
+}
 
 	/********************
 	**CODE ADDED - STOP**
