@@ -330,12 +330,10 @@ void handle_put(http_request message) {
   // Need at least an operation, table name, partition, and row
 
 
-  /*
-  if (paths.size() < 4) {
+  if (paths.size() < 2) {
     message.reply(status_codes::BadRequest);
     return;
   }
-	*/
 
   cloud_table table {table_cache.lookup_table(paths[1])};
   if ( ! table.exists()) {
@@ -357,7 +355,6 @@ void handle_put(http_request message) {
 		table_entity entity;
 		bool flag {false};
 
-		
 		while(it != end){ // This while loop iterates through each table entity
 			entity = { it->partition_key(), it->row_key() };
 			table_entity::properties_type& properties = entity.properties();
