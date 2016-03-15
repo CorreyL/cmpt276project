@@ -355,6 +355,7 @@ void handle_put(http_request message) {
 		
 		table_entity entity;
 		bool flag {false};
+
 		
 		while(it != end){ // This while loop iterates through each table entity
 			entity = { it->partition_key(), it->row_key() };
@@ -387,7 +388,9 @@ void handle_put(http_request message) {
 	}
 	
 	if( paths[0] == update_property ){
-		
+
+		message.reply(status_codes::OK);
+    return;
 	}
 	
 	/******************** 

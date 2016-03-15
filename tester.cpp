@@ -414,31 +414,43 @@ SUITE(GET) {
     CHECK_EQUAL(status_codes::OK, put_entity_no_properties(GetFixture::addr, GetFixture::table, "Squirrels", "Chuck"));
 
     //Check that only one entity has the same property as the first one (it's the first entity that should)
-    pair<status_code,value> spec_test{get_Entities_from_properties(GetFixture::addr, GetFixture::table, "ZombieVirus", "Infected")};
-    CHECK_EQUAL(1, spec_test.second.as_array().size());
+    pair<status_code,value> first_test{get_Entities_from_properties(GetFixture::addr, GetFixture::table, "ZombieVirus", "Infected")};
+    CHECK_EQUAL(1, first_test.second.as_array().size());
 
     //Update all entities to have the same one as the first
     pair<status_code,value> result = {
     do_request (methods::PUT,
-    string(GetFixture::addr) + "AddProperty/" + "ZombieVirus" + "/" + "Infected")};
+    string(GetFixture::addr) + "AddProperty/" + string(GetFixture::table), value::object (vector<pair<string,value>>
+             {make_pair("ZombieVirus", value::string("Infected"))}))};
 
-    //Check that all entities now have the added property
-    spec_test = {get_Entities_from_properties(GetFixture::addr, GetFixture::table, "ZombieVirus", "Infected")};
-    CHECK_EQUAL(4, spec_test.second.as_array().size());
+    //Check that all entities now have the added property (It's 5 because Franklin Aretha got infected too, poor guy)
+    pair<status_code,value> second_test = {get_Entities_from_properties(GetFixture::addr, GetFixture::table, "ZombieVirus", "Infected")};
+    CHECK_EQUAL(5, second_test.second.as_array().size());
+
 
     //Check that an invalid AddProperty gets a 400 code
     //Note: this is commented out because it causes a segmentation fault in the server, which results in things not being deleted properly. We do want this test in here.
     //If a segmentation fault occurs, re-comment this out and then run tests again so the deletes below can run properly.
-    //result = {
-    //do_request (methods::PUT,
-    //string(GetFixture::addr) + "AddProperty/")};
-    //CHECK_EQUAL(status_codes::BadRequest, spec_test.first);
+    /*  
+    //Invalid because no table specified
+    result = {
+    do_request (methods::PUT,
+    string(GetFixture::addr) + "AddProperty/")};
+    CHECK_EQUAL(status_codes::BadRequest, result.first);
 
+    //Invalid because no JSON body
+    result = {
+    do_request (methods::PUT,
+    string(GetFixture::addr) + "AddProperty/" + string(GetFixture::table))};
+    CHECK_EQUAL(status_codes::BadRequest, result.first);
+    */
 
     CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, "Humans", "PatientZero"));
     CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, "Humans", "Michael"));
     CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, "Humans", "Aidan"));
     CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, "Squirrels", "Chuck"));
+
+
   }
 
 }
