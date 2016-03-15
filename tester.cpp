@@ -177,6 +177,7 @@ int put_entity_no_properties(const string& addr, const string& table, const stri
     addr + "UpdateEntity/" + table + "/" + partition + "/" + row)};
   return result.first;
 }
+
 /********************
 **CODE ADDED - STOP**
 ********************/
@@ -404,23 +405,31 @@ SUITE(GET) {
 	}
 
   TEST_FIXTURE(GetFixture, AddPropertyToAll){
-    //UNDER CONSTRUCTION
-    string partition = "Video_Game";
-    string row {"The_Witcher_3"};
-    string property {"Rating"};
-    string prop_val {"10_Out_Of_10"};
 
-    put_entity (GetFixture::addr, GetFixture::table, partition, row, property, prop_val);
-    put_entity_no_properties(GetFixture::addr, GetFixture::table, "test", "for_real");
+    //Add an entity with a property, one with a property that is different than the first one,
+    //one without properties, and one with no properties in a different partition
+    CHECK_EQUAL(status_codes::OK, put_entity(GetFixture::addr, GetFixture::table, "Humans", "PatientZero", "ZombieVirus", "Infected"));
+    CHECK_EQUAL(status_codes::OK, put_entity(GetFixture::addr, GetFixture::table, "Humans", "Michael", "HasHair", "Yup"));
+    CHECK_EQUAL(status_codes::OK, put_entity_no_properties(GetFixture::addr, GetFixture::table, "Humans", "Aidan"));
+    CHECK_EQUAL(status_codes::OK, put_entity_no_properties(GetFixture::addr, GetFixture::table, "Squirrels", "Chuck"));
 
+    //Check that only one entity has the same property as the first one (it's the first entity that should)
+    pair<status_code,value> spec_test {spec_properties(GetFixture::addr, GetFixture::table, "ZombieVirus", "Infected")};
+    CHECK_EQUAL(1, spec_test.second.as_array().size());
 
+    //INSERT ADD ZOMBIE VIRUS TO ALL LINE HERE
 
+    //Check that all entities now have the added property
+    spec_test = {spec_properties(GetFixture::addr, GetFixture::table, "ZombieVirus", "Infected")};
+    CHECK_EQUAL(4, spec_test.second.as_array().size());
 
-    delete_entity (GetFixture::addr, GetFixture::table, partition, row);
-    delete_entity (GetFixture::addr, GetFixture::table, "test", "for_real");
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, "Humans", "PatientZero"));
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, "Humans", "Michael"));
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, "Humans", "Aidan"));
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, "Squirrels", "Chuck"));
   }
 
-	}
+}
 
 	/********************
 	**CODE ADDED - STOP**
