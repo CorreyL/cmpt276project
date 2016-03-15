@@ -328,11 +328,14 @@ void handle_put(http_request message) {
   cout << endl << "**** PUT " << path << endl;
   auto paths = uri::split_path(path);
   // Need at least an operation, table name, partition, and row
+  //-----Temporarily commented out-----
+  /*
   if (paths.size() < 4) {
     message.reply(status_codes::BadRequest);
     return;
   }
-
+  */
+  
   cloud_table table {table_cache.lookup_table(paths[1])};
   if ( ! table.exists()) {
     message.reply(status_codes::NotFound);

@@ -163,6 +163,20 @@ pair<status_code,value> spec_properties (const string& addr, const string& table
 	return result;
 }
 
+/*
+  Utility to put an entity with no properties
+
+  addr: Prefix of the URI (protocol, address, and port)
+  table: Table in which to insert the entity
+  partition: Partition of the entity 
+  row: Row of the entity
+ */
+int put_entity_no_properties(const string& addr, const string& table, const string& partition, const string& row){
+  pair<status_code,value> result {
+    do_request (methods::PUT,
+    addr + "UpdateEntity/" + table + "/" + partition + "/" + row)};
+  return result.first;
+}
 /********************
 **CODE ADDED - STOP**
 ********************/
@@ -309,7 +323,7 @@ SUITE(GET) {
     CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
   }
 	
-	TEST_FIXTURE(GetFixture, GetEntityProperties){
+	TEST_FIXTURE(GetFixture, GetBigPartition){
 		string partition = "Video_Game";
 		string row {"The_Witcher_3"};
     string property {"Rating"};
@@ -348,10 +362,11 @@ SUITE(GET) {
     CHECK_EQUAL(status_codes::OK, test_result.first);
 
     //Add a fourth and final element to ensure that adding a non-partition element does not mess up gets of the next (partitioned) elements
+    //Also tests if it can return an entity with no properties
     row = "Call_Of_Duty";
     prop_val = "5_Out_Of_10";
 
-    put_result = put_entity (GetFixture::addr, GetFixture::table, partition, row, property, prop_val);
+    put_result = put_entity_no_properties(GetFixture::addr, GetFixture::table, partition, row);
     cerr << "put result " << put_result << endl;
     assert (put_result == status_codes::OK);
 
@@ -387,6 +402,23 @@ SUITE(GET) {
     CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
 
 	}
+
+  TEST_FIXTURE(GetFixture, AddPropertyToAll){
+    //UNDER CONSTRUCTION
+    string partition = "Video_Game";
+    string row {"The_Witcher_3"};
+    string property {"Rating"};
+    string prop_val {"10_Out_Of_10"};
+
+    put_entity (GetFixture::addr, GetFixture::table, partition, row, property, prop_val);
+    put_entity_no_properties(GetFixture::addr, GetFixture::table, "test", "for_real");
+
+
+
+
+    delete_entity (GetFixture::addr, GetFixture::table, partition, row);
+    delete_entity (GetFixture::addr, GetFixture::table, "test", "for_real");
+  }
 
 	}
 
