@@ -358,14 +358,16 @@ void handle_put(http_request message) {
 		while(it != end){ // This while loop iterates through each table entity
 			entity = { it->partition_key(), it->row_key() };
 			table_entity::properties_type& properties = entity.properties();
+			const table_entity::properties_type& properties2 = it->properties();
 			flag = false;
 			
-		  for (auto prop_it = properties.begin(); prop_it != properties.end(); ++prop_it) // Cycles through the properties of the current entity
+		  for (auto prop_it = properties2.begin(); prop_it != properties2.end(); ++prop_it) // Cycles through the properties of the current entity
 			{
 				unordered_map<string,string>::const_iterator got = stored_message.find(prop_it->first);
 				if( got != stored_message.end() ){ // A property from the JSON body was found in the entity
-					//properties[prop_it->first] = entity_property {got->second};
-					prop_it->second = got->second;
+					properties[prop_it->first] = entity_property {got->second};
+					table_operation operation {table_operation::insert_or_merge_entity(entity)};
+					table_result op_result {table.execute(operation)};
 					flag = true;
 				}
 			}
@@ -386,7 +388,6 @@ void handle_put(http_request message) {
 	}
 	
 	if( paths[0] == update_property ){
-		/*
 		unordered_map<string,string> stored_message = get_json_body(message);
 		if(stored_message.size() == 0) message.reply(status_codes::BadRequest); // No JSON object passed in
 		table_query query {};
@@ -398,19 +399,20 @@ void handle_put(http_request message) {
 		while(it != end){ // This while loop iterates through each table entity
 			entity = { it->partition_key(), it->row_key() };
 			table_entity::properties_type& properties = entity.properties();
+			const table_entity::properties_type& properties2 = it->properties();
 			
-			for (auto prop_it = properties.begin(); prop_it != properties.end(); ++prop_it) // Cycles through the properties of the current entity
+		  for (auto prop_it = properties2.begin(); prop_it != properties2.end(); ++prop_it) // Cycles through the properties of the current entity
 			{
 				unordered_map<string,string>::const_iterator got = stored_message.find(prop_it->first);
 				if( got != stored_message.end() ){ // A property from the JSON body was found in the entity
-					//properties[prop_it->first] = entity_property {got->second};
-					prop_it->second = got->second;
+					properties[prop_it->first] = entity_property {got->second};
+					table_operation operation {table_operation::insert_or_merge_entity(entity)};
+					table_result op_result {table.execute(operation)};
 				}
 			}
 			
 			++it;
 		}
-		*/
 		message.reply(status_codes::OK);
 		return;
 	}
