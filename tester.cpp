@@ -175,6 +175,13 @@ int put_multi_properties_entity (const string& addr, const string& table, const 
   return result.first;
 }
 
+int update_property (const string& addr, const string& table, const value& properties){
+  pair<status_code,value> result { 
+    do_request(methods::PUT, 
+      addr + "UpdateProperty/" + table, properties)};
+  return result.first;
+}
+
 /*
   Utility to put an entity with no properties
 
@@ -455,7 +462,7 @@ SUITE(GET) {
     //Check that an invalid AddProperty gets a 400 code
     //Note: this is commented out because it causes a segmentation fault in the server, which results in things not being deleted properly. We do want this test in here.
     //If a segmentation fault occurs, re-comment this out and then run tests again so the deletes below can run properly.
-    /*  
+      
     //Invalid because no table specified
     result = {
     do_request (methods::PUT,
@@ -467,7 +474,7 @@ SUITE(GET) {
     do_request (methods::PUT,
     string(GetFixture::addr) + "AddProperty/" + string(GetFixture::table))};
     CHECK_EQUAL(status_codes::BadRequest, result.first);
-    */
+    
 
     CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, "Humans", "PatientZero"));
     CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, "Humans", "Michael"));
@@ -476,7 +483,7 @@ SUITE(GET) {
   }
 
   /*
-  Get all entities with specific properties
+  Test get all entities with specific properties
   */
   TEST_FIXTURE(GetFixture, GetEntityWithSpecProperties){
     string partition {"Cat"};
@@ -496,7 +503,6 @@ SUITE(GET) {
         make_pair("Cute", value::string("*")),
         make_pair("Huggable", value::string("*"))
     }))};
-
     CHECK(test_result.second.is_array());
     CHECK_EQUAL(1, test_result.second.as_array().size());
     CHECK_EQUAL(status_codes::OK, test_result.first);
@@ -517,7 +523,6 @@ SUITE(GET) {
         make_pair("Cute", value::string("*")),
         make_pair("Huggable", value::string("*"))
     }));
-
     CHECK(test_result.second.is_array());
     CHECK_EQUAL(1, test_result.second.as_array().size());
     CHECK_EQUAL(status_codes::OK, test_result.first);
@@ -539,7 +544,6 @@ SUITE(GET) {
         make_pair("Cute", value::string("*")),
         make_pair("Huggable", value::string("*"))
     }));
-
     CHECK(test_result.second.is_array());
     CHECK_EQUAL(2, test_result.second.as_array().size());
     CHECK_EQUAL(status_codes::OK, test_result.first);
@@ -560,7 +564,6 @@ SUITE(GET) {
         make_pair("Cute", value::string("*")),
         make_pair("Huggable", value::string("*"))
     }));
-
     CHECK(test_result.second.is_array());
     CHECK_EQUAL(2, test_result.second.as_array().size());
     CHECK_EQUAL(status_codes::OK, test_result.first);
@@ -578,51 +581,54 @@ SUITE(GET) {
         make_pair("Cute", value::string("*")),
         make_pair("Huggable", value::string("*"))
     }));
-
     CHECK(test_result.second.is_array());
     CHECK_EQUAL(2, test_result.second.as_array().size());
     CHECK_EQUAL(status_codes::OK, test_result.first);
 
     //Test result with no JSON body
-
     test_result = get_spec_properties_entity(GetFixture::addr, GetFixture::table, value::object(vector<pair<string,value>> {}));
-
     CHECK(test_result.second.is_array());
     CHECK_EQUAL(6, test_result.second.as_array().size());
     CHECK_EQUAL(status_codes::OK, test_result.first);
 
-    //Test result where no specfic properties is found
+    //Test after deleting an entity with the specfic properties
+    partition = "Cat";
+    row = "Domestic";
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
 
+    test_result = get_spec_properties_entity(GetFixture::addr, GetFixture::table, 
+      value::object(vector<pair<string,value>> {
+        make_pair("Cute", value::string("*")),
+        make_pair("Huggable", value::string("*"))
+    }));
+    CHECK(test_result.second.is_array());
+    CHECK_EQUAL(1, test_result.second.as_array().size());
+    CHECK_EQUAL(status_codes::OK, test_result.first);
+
+
+    //Test result where no specfic properties is found
     test_result = get_spec_properties_entity(GetFixture::addr, GetFixture::table,
       value::object(vector<pair<string,value>> {
         make_pair("Scary", value::string("*")),
         make_pair("Deadly", value::string("*"))
     }));
-
     CHECK(test_result.second.is_array());
     CHECK_EQUAL(0, test_result.second.as_array().size());
     CHECK_EQUAL(status_codes::OK, test_result.first);
 
     //Test result where table does not exist
-
     test_result = get_spec_properties_entity(GetFixture::addr, "Unknown",
       value::object(vector<pair<string,value>> {
         make_pair("Cute", value::string("*")),
         make_pair("Huggable", value::string("*"))
     }));
-
     CHECK_EQUAL(status_codes::NotFound, test_result.first);
 
     //Test result where no table name
-
     test_result = get_spec_properties_entity(GetFixture::addr, "", value::object(vector<pair<string,value>> {}));
-
     CHECK_EQUAL(status_codes::BadRequest, test_result.first);
 
     //Cleanup tables
-    partition = "Cat";
-    row = "Domestic";
-    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
     partition = "Pig";
     CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
     partition = "Bunny";
@@ -633,6 +639,132 @@ SUITE(GET) {
     CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
   }
 
+  /*
+  Test update property value
+  */
+  TEST_FIXTURE(GetFixture, UpdateProperties){
+    string partition {"Japanese"};
+    string row {"Nintendo"};
+    string property {"Fun"};
+    string prop_val {"Yes"};
+
+    CHECK_EQUAL(status_codes::OK, put_entity (GetFixture::addr, GetFixture::table, partition, row, property, prop_val));
+    row = "PlayStation";
+    CHECK_EQUAL(status_codes::OK, put_multi_properties_entity (GetFixture::addr, GetFixture::table, partition, row,
+      value::object(vector<pair<string,value>> {
+        make_pair("Fun", value::string("Yes")),
+        make_pair("Cool", value::string("Yes"))
+    })));
+    partition = "Outdoors";
+    row = "Running";
+    CHECK_EQUAL(status_codes::OK, put_entity_no_properties (GetFixture::addr, GetFixture::table, partition, row));
+    partition = "American";
+    row = "Xbox";
+    CHECK_EQUAL(status_codes::OK, put_multi_properties_entity (GetFixture::addr, GetFixture::table, partition, row,
+      value::object(vector<pair<string,value>> {
+        make_pair("Fun", value::string("No")),
+        make_pair("Cool", value::string("No")),
+        make_pair("Boring", value::string("No"))
+    })));
+    partition = "Indoors";
+    row = "Volleyball";
+    property = "Boring";
+    prop_val = "No";
+    CHECK_EQUAL(status_codes::OK, put_entity (GetFixture::addr, GetFixture::table, partition, row, property, prop_val));
+
+    pair<status_code,value> test_result { get_spec_properties_entity(GetFixture::addr, GetFixture::table, 
+      value::object(vector<pair<string,value>> {
+        make_pair("Fun", value::string("Yes"))
+    }))};
+    CHECK(test_result.second.is_array());
+    CHECK_EQUAL(3, test_result.second.as_array().size());
+    CHECK_EQUAL(status_codes::OK, test_result.first);
+    int count {0};
+    for(auto &p : test_result.second.as_array()){
+      if(p.at("Fun") == value::string("Yes")) count++;
+    }
+    CHECK_EQUAL(2, count);
+
+    //Update the property
+    CHECK_EQUAL(status_codes::OK, update_property (GetFixture::addr, GetFixture::table, 
+      value::object(vector<pair<string,value>> {
+        make_pair("Fun", value::string("Yes"))
+    })));
+
+    test_result = get_spec_properties_entity(GetFixture::addr, GetFixture::table, 
+      value::object(vector<pair<string,value>> {
+        make_pair("Fun", value::string("*"))
+    }));
+    CHECK(test_result.second.is_array());
+    CHECK_EQUAL(3, test_result.second.as_array().size());
+    CHECK_EQUAL(status_codes::OK, test_result.first);
+    count = 0;
+    for(auto &p : test_result.second.as_array()){
+      if(p.at("Fun") == value::string("Yes")) count++;
+    }
+    CHECK_EQUAL(3, count);
+
+    //Test result after updating multiple values
+    CHECK_EQUAL(status_codes::OK, update_property (GetFixture::addr, GetFixture::table, 
+      value::object(vector<pair<string,value>> {
+        make_pair("Boring", value::string("Yes")),
+        make_pair("Cool", value::string("No"))
+    })));
+
+    test_result = get_spec_properties_entity(GetFixture::addr, GetFixture::table, 
+      value::object(vector<pair<string,value>> {
+        make_pair("Boring", value::string("*"))
+    }));
+    CHECK(test_result.second.is_array());
+    CHECK_EQUAL(2, test_result.second.as_array().size());
+    CHECK_EQUAL(status_codes::OK, test_result.first);
+    count = 0;
+    for(auto &p : test_result.second.as_array()){
+      if(p.at("Boring") == value::string("Yes")) count++;
+    }
+    CHECK_EQUAL(2, count);
+
+    test_result = get_spec_properties_entity(GetFixture::addr, GetFixture::table, value::object(vector<pair<string,value>> {}));
+    CHECK(test_result.second.is_array());
+    CHECK_EQUAL(6, test_result.second.as_array().size());
+    CHECK_EQUAL(status_codes::OK, test_result.first);
+    count = 0;
+    for(auto &p : test_result.second.as_array()){
+      if(p.has_field("Cool")) {
+        if(p.at("Cool") == value::string("Yes")) count++;
+      }
+    }
+    CHECK_EQUAL(0, count);
+
+    //Test result without JSON body
+    CHECK_EQUAL(status_codes::BadRequest, update_property (GetFixture::addr, GetFixture::table, value::object(vector<pair<string,value>> {})));
+
+    //Test result without table name
+    CHECK_EQUAL(status_codes::BadRequest, update_property (GetFixture::addr, "", value::object(vector<pair<string,value>> {})));
+
+    //Test result where table does not exist
+    CHECK_EQUAL(status_codes::NotFound, update_property (GetFixture::addr, "Unknown", 
+      value::object(vector<pair<string,value>> {
+        make_pair("Message", value::string("Hi"))
+      })));
+
+    //Cleanup tables
+    partition = "Japanese";
+    row = "Nintendo";
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
+    row = "PlayStation";
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
+    partition = "Outdoors";
+    row = "Running";
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
+    partition = "American";
+    row = "Xbox";
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
+    partition = "Indoors";
+    row = "Volleyball";
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
+
+  }
 }
 
 	/********************
