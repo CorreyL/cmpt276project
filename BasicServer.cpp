@@ -165,7 +165,7 @@ void handle_get(http_request message) {
   cout << endl << "**** GET " << path << endl;
   auto paths = uri::split_path(path);
   // Need at least a table name
-  if (paths.size() < 1 || paths.size() == 2) {
+  if (paths.size() < 1 || paths.size() == 2) { // If paths.size() == 2, then only a table and either a partition or row was passed; we need both the partition and row for a complete key.
     message.reply(status_codes::BadRequest);
     return;
   }
@@ -177,8 +177,9 @@ void handle_get(http_request message) {
 	/********************* 
 	**CODE ADDED - BEGIN**
 	**********************/
+	// Get all entities containing all specified properties
 	unordered_map<string,string> stored_message = get_json_body(message);
-	if( stored_message.size() > 0 ){ // Get all entities containing all specified properties
+	if( stored_message.size() > 0 ){
 		table_query query {};
 		table_query_iterator end;
 		table_query_iterator it = table.execute_query(query);
@@ -255,7 +256,7 @@ void handle_get(http_request message) {
 				++it;
 			}
 			
-			if( keys.empty() ){ // In the case where the requested partition is not a part of the table. prop_vals_t is a vector; empty() is a function of the vector class
+			if( keys.empty() ){ // The requested partition is not a part of the table
 				message.reply(status_codes::NotFound);
 				return;
 			}
@@ -398,8 +399,8 @@ void handle_put(http_request message) {
 		
 		while(it != end){ // This while loop iterates through each table entity
 			entity = { it->partition_key(), it->row_key() };
-			table_entity::properties_type& properties = entity.properties();
-			const table_entity::properties_type& properties2 = it->properties();
+			table_entity::properties_type& properties = entity.properties(); // Since properties2 is const, need this to make changes to an entity
+			const table_entity::properties_type& properties2 = it->properties(); // Needed to iterate through the the properties of an entity
 			
 		  for (auto prop_it = properties2.begin(); prop_it != properties2.end(); ++prop_it) // Cycles through the properties of the current entity
 			{
