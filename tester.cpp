@@ -322,8 +322,8 @@ SUITE(GET) {
     CHECK_EQUAL(status_codes::NotFound, test_result.first);
 
     //Ensure bad requests get a 400 response (no partition name)
-    //test_result = do_request (methods::GET, string(GetFixture::addr) + string(GetFixture::table) + "/" + row);
-    //CHECK_EQUAL(status_codes::BadRequest, test_result.first);
+    test_result = do_request (methods::GET, string(GetFixture::addr) + string(GetFixture::table) + "/" + row);
+    CHECK_EQUAL(status_codes::BadRequest, test_result.first);
 
 		//Add an element, check GET works
 		int put_result {put_entity (GetFixture::addr, GetFixture::table, partition, row, property, prop_val)};
@@ -382,14 +382,22 @@ SUITE(GET) {
     //Clear Table
     row = "The_Witcher_3";
     CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
+    delete_entity (GetFixture::addr, GetFixture::table, partition, row);
+    delete_entity (GetFixture::addr, GetFixture::table, partition, row);
     row = "Fire_Emblem";
     CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
+    delete_entity (GetFixture::addr, GetFixture::table, partition, row);
+    delete_entity (GetFixture::addr, GetFixture::table, partition, row);
     partition = "Aidan";
     row = "Canada";
     CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
+    delete_entity (GetFixture::addr, GetFixture::table, partition, row);
+    delete_entity (GetFixture::addr, GetFixture::table, partition, row);
     partition = "Video_Game";
     row = "Call_Of_Duty";
     CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
+    delete_entity (GetFixture::addr, GetFixture::table, partition, row);
+    delete_entity (GetFixture::addr, GetFixture::table, partition, row);
   }
 
   TEST_FIXTURE(GetFixture, AddPropertyToAll){

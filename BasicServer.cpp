@@ -165,7 +165,7 @@ void handle_get(http_request message) {
   cout << endl << "**** GET " << path << endl;
   auto paths = uri::split_path(path);
   // Need at least a table name
-  if (paths.size() < 1) {
+  if (paths.size() < 1 || paths.size() == 2) {
     message.reply(status_codes::BadRequest);
     return;
   }
