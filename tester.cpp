@@ -533,6 +533,8 @@ SUITE(GET) {
         make_pair("Likeable", value::string("7.5/10")),
         make_pair("Cute", value::string("8/10"))
     }));
+    cerr << "put result " << put_result << endl;
+    assert (put_result == status_codes::OK);
 
     test_result = get_spec_properties_entity(GetFixture::addr, GetFixture::table, 
       value::object(vector<pair<string,value>> {
@@ -552,6 +554,8 @@ SUITE(GET) {
       value::object(vector<pair<string,value>> {
         make_pair("Tough", value::string("9/10"))
     }));
+    cerr << "put result " << put_result << endl;
+    assert (put_result == status_codes::OK);
 
     test_result = get_spec_properties_entity(GetFixture::addr, GetFixture::table, 
       value::object(vector<pair<string,value>> {
@@ -559,32 +563,77 @@ SUITE(GET) {
         make_pair("Huggable", value::string("*"))
     }));
 
+    CHECK(test_result.second.is_array());
+    CHECK_EQUAL(2, test_result.second.as_array().size());
+    CHECK_EQUAL(status_codes::OK, test_result.first);
+
     //Finally add entity with no properties
-    partition = "GuineaPig";
+    partition = "Pig";
     row = "Domestic";
 
     put_result = put_entity_no_properties(GetFixture::addr, GetFixture::table, partition, row);
+    cerr << "put result " << put_result << endl;
+    assert (put_result == status_codes::OK);
 
     test_result = get_spec_properties_entity(GetFixture::addr, GetFixture::table, 
       value::object(vector<pair<string,value>> {
         make_pair("Cute", value::string("*")),
         make_pair("Huggable", value::string("*"))
     }));
+
+    CHECK(test_result.second.is_array());
+    CHECK_EQUAL(2, test_result.second.as_array().size());
+    CHECK_EQUAL(status_codes::OK, test_result.first);
 
     //Test result with no JSON body
 
     test_result = get_spec_properties_entity(GetFixture::addr, GetFixture::table, value::object(vector<pair<string,value>> {}));
 
-    //Test 
+    CHECK(test_result.second.is_array());
+    CHECK_EQUAL(6, test_result.second.as_array().size());
+    CHECK_EQUAL(status_codes::OK, test_result.first);
+
+    //Test result where no specfic properties is found
+
+    test_result = get_spec_properties_entity(GetFixture::addr, GetFixture::table,
+      value::object(vector<pair<string,value>> {
+        make_pair("Scary", value::string("*")),
+        make_pair("Deadly", value::string("*"))
+    }));
+
+    CHECK(test_result.second.is_array());
+    CHECK_EQUAL(0, test_result.second.as_array().size());
+    CHECK_EQUAL(status_codes::OK, test_result.first);
+
+    //Test result where table does not exist
+
+    test_result = get_spec_properties_entity(GetFixture::addr, "Unknown",
+      value::object(vector<pair<string,value>> {
+        make_pair("Cute", value::string("*")),
+        make_pair("Huggable", value::string("*"))
+    }));
+
+    CHECK_EQUAL(status_codes::NotFound, test_result.first);
+
+    //Test result where no table name
+
+    test_result = get_spec_properties_entity(GetFixture::addr, "", value::object(vector<pair<string,value>> {}));
+
+    CHECK_EQUAL(status_codes::BadRequest, test_result.first);
 
     //Cleanup tables
     partition = "Cat";
     row = "Domestic";
     CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
-    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, "Bunny", "Wild"));
-    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, "Bunny", "Domestic"));
-    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, "Dog", "Wild"));
-    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, "GuineaPig", "Domestic"));
+    partition = "Pig";
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
+    partition = "Bunny";
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
+    row = "Wild";
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
+    partition = "Dog";
+    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
+
   }
 
 }
