@@ -590,6 +590,13 @@ SUITE(GET) {
     CHECK_EQUAL(2, test_result.second.as_array().size());
     CHECK_EQUAL(status_codes::OK, test_result.first);
 
+    //Check if entities returned contain specific properties
+    int count {0};
+    for(auto &p : test_result.second.as_array()){
+      if(p.has_field("Cute") && p.has_field("Huggable")) count++;
+    }
+    CHECK_EQUAL(2, count);
+
     //Test result with no JSON body
     test_result = get_spec_properties_entity(GetFixture::addr, GetFixture::table, value::object(vector<pair<string,value>> {}));
     CHECK(test_result.second.is_array());
@@ -678,6 +685,7 @@ SUITE(GET) {
     prop_val = "No";
     CHECK_EQUAL(status_codes::OK, put_entity (GetFixture::addr, GetFixture::table, partition, row, property, prop_val));
 
+    //Check returned entities' property value
     pair<status_code,value> test_result { get_spec_properties_entity(GetFixture::addr, GetFixture::table, 
       value::object(vector<pair<string,value>> {
         make_pair("Fun", value::string("Yes"))
@@ -691,7 +699,7 @@ SUITE(GET) {
     }
     CHECK_EQUAL(2, count);
 
-    //Update the property
+    //Update the property value
     CHECK_EQUAL(status_codes::OK, update_property (GetFixture::addr, GetFixture::table, 
       value::object(vector<pair<string,value>> {
         make_pair("Fun", value::string("Yes"))
@@ -704,6 +712,8 @@ SUITE(GET) {
     CHECK(test_result.second.is_array());
     CHECK_EQUAL(3, test_result.second.as_array().size());
     CHECK_EQUAL(status_codes::OK, test_result.first);
+
+    //Check returned entities' property value change (Should turn to "Yes")
     count = 0;
     for(auto &p : test_result.second.as_array()){
       if(p.at("Fun") == value::string("Yes")) count++;
@@ -730,6 +740,7 @@ SUITE(GET) {
     }
     CHECK_EQUAL(2, count);
 
+    //Test result with all entities (to see if method changed other entities)
     test_result = get_spec_properties_entity(GetFixture::addr, GetFixture::table, value::object(vector<pair<string,value>> {}));
     CHECK(test_result.second.is_array());
     CHECK_EQUAL(6, test_result.second.as_array().size());
