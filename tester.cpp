@@ -387,6 +387,27 @@ pair<status_code,string> get_update_token(const string& addr,  const string& use
 }
 
 /*
+  Utility to get a token good for updating a specific entry
+  from a specific table for one day.
+ */
+pair<status_code,string> get_update_token(const string& addr,  const string& userid, const string& password) {
+  value pwd {build_json_object (vector<pair<string,string>> {make_pair("Password", password)})};
+  pair<status_code,value> result {do_request (methods::GET,
+                                              addr +
+                                              get_update_token_op + "/" +
+                                              userid,
+                                              pwd
+                                              )};
+  cerr << "token " << result.second << endl;
+  if (result.first != status_codes::OK)
+    return make_pair (result.first, "");
+  else {
+    string token {result.second["token"].as_string()};
+    return make_pair (result.first, token);
+  }
+}
+
+/*
   A sample fixture that ensures TestTable exists, and
   at least has the entity Franklin,Aretha/USA
   with the property "Song": "RESPECT".
@@ -440,9 +461,9 @@ public:
       if (del_result != status_codes::OK) {
         throw std::exception();
       }
-      */
+     */
     }
-  };
+};
 
   /*
     A test of GET of a single entity
@@ -463,7 +484,6 @@ public:
 		  result.second.serialize());
       CHECK_EQUAL(status_codes::OK, result.first);
     }
-};
 
   /*
     A test of GET all table entries
@@ -481,19 +501,30 @@ public:
 
     pair<status_code,value> result {
       do_request (methods::GET,
-		  string(GetFixture::addr)
-		  + string(GetFixture::table))};
-    CHECK(result.second.is_array());
-    CHECK_EQUAL(2, result.second.as_array().size());
-		
-    /*
-      Checking the body is not well-supported by UnitTest++, as we have to test
-      independent of the order of returned values.
-     */
-    //CHECK_EQUAL(body.serialize(), string("{\"")+string(GetFixture::property)+ "\":\""+string(GetFixture::prop_val)+"\"}");
+                  string(BasicFixture::addr)
+                  + read_entity_admin + "/"
+                  + string(BasicFixture::table))};
     CHECK_EQUAL(status_codes::OK, result.first);
-
-    CHECK_EQUAL(status_codes::OK, delete_entity (GetFixture::addr, GetFixture::table, partition, row));
+    value obj1 {
+      value::object(vector<pair<string,value>> {
+          make_pair(string("Partition"), value::string(partition)),
+          make_pair(string("Row"), value::string(row)),
+          make_pair(property, value::string(prop_val))
+      })
+    };
+    value obj2 {
+      value::object(vector<pair<string,value>> {
+          make_pair(string("Partition"), value::string(BasicFixture::partition)),
+          make_pair(string("Row"), value::string(BasicFixture::row)),
+          make_pair(string(BasicFixture::property), value::string(BasicFixture::prop_val))
+      })
+    };
+    vector<object> exp {
+      obj1.as_object(),
+      obj2.as_object()
+    };
+    compare_json_arrays(exp, result.second);
+    CHECK_EQUAL(status_codes::OK, delete_entity (BasicFixture::addr, BasicFixture::table, partition, row));
   }
 	/********************* 
 	**CODE ADDED - BEGIN**
@@ -965,38 +996,6 @@ public:
 	**CODE ADDED - STOP**
 	********************/
 
-/*
-  Locate and run all tests
- */
-int main(int argc, const char* argv[]) {
-  return UnitTest::RunAllTests();
-                  string(BasicFixture::addr)
-                  + read_entity_admin + "/"
-                  + string(BasicFixture::table))};
-    CHECK_EQUAL(status_codes::OK, result.first);
-    value obj1 {
-      value::object(vector<pair<string,value>> {
-          make_pair(string("Partition"), value::string(partition)),
-          make_pair(string("Row"), value::string(row)),
-          make_pair(property, value::string(prop_val))
-      })
-    };
-    value obj2 {
-      value::object(vector<pair<string,value>> {
-          make_pair(string("Partition"), value::string(BasicFixture::partition)),
-          make_pair(string("Row"), value::string(BasicFixture::row)),
-          make_pair(string(BasicFixture::property), value::string(BasicFixture::prop_val))
-      })
-    };
-    vector<object> exp {
-      obj1.as_object(),
-      obj2.as_object()
-    };
-    compare_json_arrays(exp, result.second);
-    CHECK_EQUAL(status_codes::OK, delete_entity (BasicFixture::addr, BasicFixture::table, partition, row));
-  }
-}
-
 class AuthFixture {
 public:
   static constexpr const char* addr {"http://localhost:34568/"};
@@ -1088,5 +1087,37 @@ SUITE(UPDATE_AUTH) {
                              
     cout << AuthFixture::property << endl;
     compare_json_values (expect, ret_res.second);
+  }
+}
+
+/*
+  Locate and run all tests
+ */
+int main(int argc, const char* argv[]) {
+  return UnitTest::RunAllTests();
+                  string(BasicFixture::addr)
+                  + read_entity_admin + "/"
+                  + string(BasicFixture::table))};
+    CHECK_EQUAL(status_codes::OK, result.first);
+    value obj1 {
+      value::object(vector<pair<string,value>> {
+          make_pair(string("Partition"), value::string(partition)),
+          make_pair(string("Row"), value::string(row)),
+          make_pair(property, value::string(prop_val))
+      })
+    };
+    value obj2 {
+      value::object(vector<pair<string,value>> {
+          make_pair(string("Partition"), value::string(BasicFixture::partition)),
+          make_pair(string("Row"), value::string(BasicFixture::row)),
+          make_pair(string(BasicFixture::property), value::string(BasicFixture::prop_val))
+      })
+    };
+    vector<object> exp {
+      obj1.as_object(),
+      obj2.as_object()
+    };
+    compare_json_arrays(exp, result.second);
+    CHECK_EQUAL(status_codes::OK, delete_entity (BasicFixture::addr, BasicFixture::table, partition, row));
   }
 }
