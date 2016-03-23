@@ -67,15 +67,17 @@ using prop_vals_t = vector<pair<string,value>>;
 
 constexpr const char* def_url = "http://localhost:34568";
 
-const string create_table {"CreateTable"};
-const string delete_table {"DeleteTable"};
-const string update_entity {"UpdateEntity"};
-const string delete_entity {"DeleteEntity"};
+const string create_table {"CreateTableAdmin"};
+const string delete_table {"DeleteTableAdmin"};
+const string update_entity {"UpdateEntityAdmin"};
+const string delete_entity {"DeleteEntityAdmin"};
 /********************* 
 **CODE ADDED - BEGIN**
 **********************/
-const string add_property {"AddProperty"};
-const string update_property {"UpdateProperty"};
+const string get_entity_partition {"GetEntityPartitionAdmin"};
+const string get_entity_properties {"GetEntityPropertiesAdmin"};
+const string add_property_admin {"AddPropertyAdmin"};
+const string update_property_admin {"UpdatePropertyAdmin"};
 /******************** 
 **CODE ADDED - STOP**
 ********************/
@@ -371,7 +373,7 @@ void handle_put(http_request message) {
 	/********************* 
 	**CODE ADDED - BEGIN**
 	**********************/
-	if( paths[0] == add_property ){
+	if( paths[0] == add_property_admin ){
 		unordered_map<string,string> stored_message = get_json_body(message);
 		if(stored_message.size() == 0) message.reply(status_codes::BadRequest); // No JSON object passed in
 		table_query query {};
@@ -414,7 +416,7 @@ void handle_put(http_request message) {
 		return;
 	}
 	
-	if( paths[0] == update_property ){
+	if( paths[0] == update_property_admin ){
 		unordered_map<string,string> stored_message = get_json_body(message);
 		if(stored_message.size() == 0) message.reply(status_codes::BadRequest); // No JSON object passed in
 		table_query query {};
