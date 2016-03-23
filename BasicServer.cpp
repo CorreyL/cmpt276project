@@ -25,6 +25,8 @@
 
 #include "azure_keys.h"
 
+#include "ServerUtils.h"
+
 using azure::storage::cloud_storage_account;
 using azure::storage::storage_credentials;
 using azure::storage::storage_exception;
@@ -541,7 +543,6 @@ int main (int argc, char const * argv[]) {
   table_cache.init (storage_connection_string);
 
   cout << "Opening listener" << endl;
-  http_listener listener {def_url};
   listener.support(methods::GET, &handle_get);
   listener.support(methods::POST, &handle_post);
   listener.support(methods::PUT, &handle_put);
