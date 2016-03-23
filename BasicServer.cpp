@@ -71,6 +71,7 @@ const string create_table {"CreateTableAdmin"};
 const string delete_table {"DeleteTableAdmin"};
 const string update_entity {"UpdateEntityAdmin"};
 const string delete_entity {"DeleteEntityAdmin"};
+const string read_entity_admin {"ReadEntityAdmin"};
 /********************* 
 **CODE ADDED - BEGIN**
 **********************/
@@ -242,7 +243,8 @@ void handle_get(http_request message) {
 	********************/
 
   // GET all entries in table
-  if (paths.size() == 1) {
+  // if (paths.size() == 1) {
+	if (paths[0] == read_entity_admin){
     table_query query {};
     table_query_iterator end;
     table_query_iterator it = table.execute_query(query);
