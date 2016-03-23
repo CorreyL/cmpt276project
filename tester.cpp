@@ -51,6 +51,10 @@ const string update_entity_auth {"UpdateEntityAuth"};
 const string get_read_token_op  {"GetReadToken"};
 const string get_update_token_op {"GetUpdateToken"};
 
+// The two required operations from Assignment 1
+const string get_entity_partition {"GetEntityPartitionAdmin"};
+const string get_entity_properties {"GetEntityPropertiesAdmin"};
+
 // The two optional operations from Assignment 1
 const string add_property_admin {"AddPropertyAdmin"};
 const string update_property_admin {"UpdatePropertyAdmin"};
@@ -292,7 +296,7 @@ int put_entity(const string& addr, const string& table, const string& partition,
               const vector<pair<string,value>>& props) {
   pair<status_code,value> result {
     do_request (methods::PUT,
-               addr + "UpdateEntity/" + table + "/" + partition + "/" + row,
+               addr + "UpdateEntityAdmin/" + table + "/" + partition + "/" + row,
                value::object (props))};
   return result.first;
 }
@@ -316,31 +320,31 @@ int delete_entity (const string& addr, const string& table, const string& partit
 **CODE ADDED - BEGIN**
 **********************/
 pair<status_code,value> get_partition_entity (const string& addr, const string& table, const string& partition, const string& row){
-	pair<status_code,value> result {do_request(methods::GET, addr + table + "/" + partition + "/" + row) };
+	pair<status_code,value> result {do_request(methods::GET, addr + get_entity_partition + "/" + table + "/" + partition + "/" + row) };
 	return result;
 }
 
 pair<status_code,value> get_Entities_from_property (const string& addr, const string& table, const string& prop, const string& pstring){
-	pair<status_code,value> result { do_request(methods::GET, addr + table, value::object(vector<pair<string,value>> {make_pair(prop, value::string(pstring))}))};
+	pair<status_code,value> result { do_request(methods::GET, addr + get_entity_properties + "/" + table, value::object(vector<pair<string,value>> {make_pair(prop, value::string(pstring))}))};
 	return result;
 }
 
 pair<status_code,value> get_spec_properties_entity (const string& addr, const string& table, const value& properties){
-  pair<status_code,value> result { do_request(methods::GET, addr + table, properties)};
+  pair<status_code,value> result { do_request(methods::GET, addr + get_entity_properties + "/" + table, properties)};
   return result;
 }
 
 int put_multi_properties_entity (const string& addr, const string& table, const string& partition, const string& row, const value& properties){
   pair<status_code,value> result { 
     do_request(methods::PUT, 
-      addr + "UpdateEntity/" + table + "/" + partition + "/" + row, properties)};
+      addr + "UpdateEntityAdmin/" + table + "/" + partition + "/" + row, properties)};
   return result.first;
 }
 
 int update_property (const string& addr, const string& table, const value& properties){
   pair<status_code,value> result { 
     do_request(methods::PUT, 
-      addr + "UpdateProperty/" + table, properties)};
+      addr + "UpdatePropertyAdmin/" + table, properties)};
   return result.first;
 }
 
@@ -355,7 +359,7 @@ int update_property (const string& addr, const string& table, const value& prope
 int put_entity_no_properties(const string& addr, const string& table, const string& partition, const string& row){
   pair<status_code,value> result {
     do_request (methods::PUT,
-    addr + "UpdateEntity/" + table + "/" + partition + "/" + row)};
+    addr + "UpdateEntityAdmin/" + table + "/" + partition + "/" + row)};
   return result.first;
 }
 
@@ -627,7 +631,7 @@ SUITE(GET) {
     //Update all entities to have the same one as the first
     pair<status_code,value> result = {
     do_request (methods::PUT,
-    string(BasicFixture::addr) + "AddProperty/" + string(BasicFixture::table), value::object (vector<pair<string,value>>
+    string(BasicFixture::addr) + "AddPropertyAdmin/" + string(BasicFixture::table), value::object (vector<pair<string,value>>
              {make_pair(property, value::string(prop_val))}))};
 
     //Check that all entities now have the added property (It's 5 because Franklin Aretha got infected too, poor guy)
@@ -644,13 +648,13 @@ SUITE(GET) {
     //Invalid because no JSON body
     result = {
     do_request (methods::PUT,
-    string(BasicFixture::addr) + "AddProperty/" + string(BasicFixture::table))};
+    string(BasicFixture::addr) + "AddPropertyAdmin/" + string(BasicFixture::table))};
     CHECK_EQUAL(status_codes::BadRequest, result.first);
 
     //Ensure if the table does not exist a 404 code is recieved
     result = {
     do_request (methods::PUT,
-    string(BasicFixture::addr) + "AddProperty/" + "WrongTable",
+    string(BasicFixture::addr) + "AddPropertyAdmin/" + "WrongTable",
     value::object (vector<pair<string,value>>{make_pair(property, value::string(prop_val))}))};
     CHECK_EQUAL(status_codes::NotFound, result.first);
 

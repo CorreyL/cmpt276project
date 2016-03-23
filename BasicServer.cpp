@@ -200,7 +200,8 @@ void handle_get(http_request message) {
 	**********************/
 	// Get all entities containing all specified properties
 	unordered_map<string,string> stored_message = get_json_body(message);
-	if( stored_message.size() > 0 ){
+	// if( stored_message.size() > 0 ){
+	if( paths[0] == get_entity_properties ){
 		table_query query {};
 		table_query_iterator end;
 		table_query_iterator it = table.execute_query(query);
@@ -261,7 +262,8 @@ void handle_get(http_request message) {
 	**CODE ADDED - BEGIN**
 	**********************/
 	// GET all entities from a specific partition
-	if( paths[2] == "*" ){
+	if( paths[0] == get_entity_partition ){
+	// if( paths[2] == "*" ){
 			table_query query {};
 			table_query_iterator end;
 			table_query_iterator it = table.execute_query(query);
