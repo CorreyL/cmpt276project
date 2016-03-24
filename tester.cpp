@@ -455,6 +455,7 @@ SUITE(GET) {
     pair<status_code,value> result {
       do_request (methods::GET,
 		  string(BasicFixture::addr)
+      + get_entity_partition_admin + "/"
 		  + BasicFixture::table + "/"
 		  + BasicFixture::partition + "/"
 		  + BasicFixture::row)};
