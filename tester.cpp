@@ -44,6 +44,7 @@ const string delete_table_op {"DeleteTableAdmin"};
 const string read_entity_admin {"ReadEntityAdmin"};
 const string update_entity_admin {"UpdateEntityAdmin"};
 const string delete_entity_admin {"DeleteEntityAdmin"};
+const string get_all_admin {"GetAllAdmin"};
 
 const string read_entity_auth {"ReadEntityAuth"};
 const string update_entity_auth {"UpdateEntityAuth"};
@@ -319,6 +320,7 @@ int delete_entity (const string& addr, const string& table, const string& partit
 /********************* 
 **CODE ADDED - BEGIN**
 **********************/
+
 pair<status_code,value> get_partition_entity (const string& addr, const string& table, const string& partition, const string& row){
 	pair<status_code,value> result {do_request(methods::GET, addr + get_entity_partition + "/" + table + "/" + partition + "/" + row) };
 	return result;
