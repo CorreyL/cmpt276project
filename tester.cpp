@@ -53,8 +53,8 @@ const string get_read_token_op  {"GetReadToken"};
 const string get_update_token_op {"GetUpdateToken"};
 
 // The two required operations from Assignment 1
-const string get_entity_partition {"GetEntityPartitionAdmin"};
-const string get_entity_properties {"GetEntityPropertiesAdmin"};
+const string get_entity_partition_admin {"GetEntityPartitionAdmin"};
+const string get_entity_properties_admin {"GetEntityPropertiesAdmin"};
 
 // The two optional operations from Assignment 1
 const string add_property_admin {"AddPropertyAdmin"};
@@ -297,7 +297,7 @@ int put_entity(const string& addr, const string& table, const string& partition,
               const vector<pair<string,value>>& props) {
   pair<status_code,value> result {
     do_request (methods::PUT,
-               addr + "UpdateEntityAdmin/" + table + "/" + partition + "/" + row,
+               addr + update_entity_admin + "/" + table + "/" + partition + "/" + row,
                value::object (props))};
   return result.first;
 }
@@ -322,24 +322,24 @@ int delete_entity (const string& addr, const string& table, const string& partit
 **********************/
 
 pair<status_code,value> get_partition_entity (const string& addr, const string& table, const string& partition, const string& row){
-	pair<status_code,value> result {do_request(methods::GET, addr + get_entity_partition + "/" + table + "/" + partition + "/" + row) };
+	pair<status_code,value> result {do_request(methods::GET, addr + get_entity_partition_admin + "/" + table + "/" + partition + "/" + row) };
 	return result;
 }
 
 pair<status_code,value> get_Entities_from_property (const string& addr, const string& table, const string& prop, const string& pstring){
-	pair<status_code,value> result { do_request(methods::GET, addr + get_entity_properties + "/" + table, value::object(vector<pair<string,value>> {make_pair(prop, value::string(pstring))}))};
+	pair<status_code,value> result { do_request(methods::GET, addr + get_entity_properties_admin + "/" + table, value::object(vector<pair<string,value>> {make_pair(prop, value::string(pstring))}))};
 	return result;
 }
 
 pair<status_code,value> get_spec_properties_entity (const string& addr, const string& table, const value& properties){
-  pair<status_code,value> result { do_request(methods::GET, addr + get_entity_properties + "/" + table, properties)};
+  pair<status_code,value> result { do_request(methods::GET, addr + get_entity_properties_admin + "/" + table, properties)};
   return result;
 }
 
 int put_multi_properties_entity (const string& addr, const string& table, const string& partition, const string& row, const value& properties){
   pair<status_code,value> result { 
     do_request(methods::PUT, 
-      addr + "UpdateEntityAdmin/" + table + "/" + partition + "/" + row, properties)};
+      addr + update_entity_admin + "/"  + table + "/" + partition + "/" + row, properties)};
   return result.first;
 }
 
@@ -361,7 +361,7 @@ int update_property (const string& addr, const string& table, const value& prope
 int put_entity_no_properties(const string& addr, const string& table, const string& partition, const string& row){
   pair<status_code,value> result {
     do_request (methods::PUT,
-    addr + "UpdateEntityAdmin/" + table + "/" + partition + "/" + row)};
+    addr + update_entity_admin + "/"  + table + "/" + partition + "/" + row)};
   return result.first;
 }
 
@@ -466,7 +466,7 @@ SUITE(GET) {
 		  + "\"}",
 		  result.second.serialize());
       CHECK_EQUAL(status_codes::OK, result.first);
-    }
+    } 
 
   /*
     A test of GET all table entries
@@ -604,6 +604,10 @@ SUITE(GET) {
     delete_entity (BasicFixture::addr, BasicFixture::table, partition, row);
     delete_entity (BasicFixture::addr, BasicFixture::table, partition, row);
   }
+
+  /*
+    A Test of adding a specific property to all entities
+  */
 
   TEST_FIXTURE(BasicFixture, AddPropertyToAll){
     string partition {"Humans"};
