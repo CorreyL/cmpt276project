@@ -460,13 +460,21 @@ SUITE(GET) {
 		  + BasicFixture::partition + "/"
 		  + BasicFixture::row)};
       
-      CHECK_EQUAL(string("{\"")
-		  + BasicFixture::property
-		  + "\":\""
-		  + BasicFixture::prop_val
-		  + "\"}",
-		  result.second.serialize());
-      CHECK_EQUAL(status_codes::OK, result.first);
+    value obj1 {
+      value::object(vector<pair<string,value>> {
+          make_pair(string("Partition"), value::string(partition)),
+          make_pair(string("Row"), value::string(row)),
+          make_pair(string("Song"), value::string(prop_val))
+      })
+    };
+
+    vector<object> exp {
+      obj1.as_object()
+    };
+
+    compare_json_arrays(exp, result.second);
+
+    CHECK_EQUAL(status_codes::OK, result.first);
     } 
 
   /*
