@@ -179,7 +179,7 @@ unordered_map<string,string> get_json_body(http_request message) {
   GET is the only request that has no command. All
   operands specify the value(s) to be retrieved.
  */
-void handle_get(http_request message) { 
+void handle_get(http_request message) {
   string path {uri::decode(message.relative_uri().path())};
   cout << endl << "**** GET " << path << endl;
   auto paths = uri::split_path(path);
@@ -187,11 +187,6 @@ void handle_get(http_request message) {
   if (paths.size() < 2 || paths.size() == 3) { // If paths.size() == 3, then only a table and either a partition or row was passed; we need both the partition and row for a complete key.
     message.reply(status_codes::BadRequest);
     return;
-  }
-
-  unordered_map<string,string> json_body {get_json_body (message)};
-  for (auto path : paths){
-   cout << path << endl;
   }
 
   cloud_table table {table_cache.lookup_table(paths[1])};
@@ -367,8 +362,7 @@ void handle_put(http_request message) {
     message.reply(status_codes::BadRequest);
     return;
   }
-
-  unordered_map<string,string> json_body {get_json_body (message)};  
+ 
 
   cloud_table table {table_cache.lookup_table(paths[1])};
   if ( ! table.exists()) {
@@ -376,11 +370,11 @@ void handle_put(http_request message) {
     return;
   }
 	
+  unordered_map<string,string> stored_message = get_json_body(message);
 	/********************* 
 	**CODE ADDED - BEGIN**
 	**********************/
 	if( paths[0] == add_property_admin ){
-		unordered_map<string,string> stored_message = get_json_body(message);
 		if(stored_message.size() == 0) message.reply(status_codes::BadRequest); // No JSON object passed in
 		table_query query {};
 		table_query_iterator end;
@@ -423,7 +417,6 @@ void handle_put(http_request message) {
 	}
 	
 	if( paths[0] == update_property_admin ){
-		unordered_map<string,string> stored_message = get_json_body(message);
 		if(stored_message.size() == 0) message.reply(status_codes::BadRequest); // No JSON object passed in
 		table_query query {};
 		table_query_iterator end;
@@ -463,7 +456,7 @@ void handle_put(http_request message) {
     if (paths[0] == update_entity) {
       cout << "Update " << entity.partition_key() << " / " << entity.row_key() << endl;
       table_entity::properties_type& properties = entity.properties();
-      for (const auto v : json_body) {
+      for (const auto v : stored_message) {
 	properties[v.first] = entity_property {v.second};
       }
 

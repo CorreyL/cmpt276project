@@ -632,6 +632,7 @@ SUITE(GET) {
     property = "ZombieVirus";
     prop_val = "Infected";
     pair<status_code,value> first_test{get_Entities_from_property(BasicFixture::addr, BasicFixture::table, property, prop_val)};
+    CHECK_EQUAL(status_codes::OK, first_test.first);
     CHECK_EQUAL(1, first_test.second.as_array().size());
 
     //Update all entities to have the same one as the first
@@ -642,6 +643,7 @@ SUITE(GET) {
 
     //Check that all entities now have the added property (It's 5 because Franklin Aretha got infected too, poor guy)
     pair<status_code,value> second_test = {get_Entities_from_property(BasicFixture::addr, BasicFixture::table, property, prop_val)};
+    CHECK_EQUAL(status_codes::OK, second_test.first);
     CHECK_EQUAL(5, second_test.second.as_array().size());
 
     //Check that an invalid AddProperty gets a 400 code   
