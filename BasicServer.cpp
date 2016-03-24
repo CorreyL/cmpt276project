@@ -184,14 +184,17 @@ void handle_get(http_request message) {
   cout << endl << "**** GET " << path << endl;
   auto paths = uri::split_path(path);
   // Need at least a table name
-  if (paths.size() < 1 || paths.size() == 2) { // If paths.size() == 2, then only a table and either a partition or row was passed; we need both the partition and row for a complete key.
+  if (paths.size() < 2 || paths.size() == 3) { // If paths.size() == 3, then only a table and either a partition or row was passed; we need both the partition and row for a complete key.
     message.reply(status_codes::BadRequest);
     return;
   }
 
   unordered_map<string,string> json_body {get_json_body (message)};
+  for (auto path : paths){
+   cout << path << endl;
+  }
 
-  cloud_table table {table_cache.lookup_table(paths[0])};
+  cloud_table table {table_cache.lookup_table(paths[1])};
   if ( ! table.exists()) {
     message.reply(status_codes::NotFound);
     return;
@@ -243,7 +246,6 @@ void handle_get(http_request message) {
 	********************/
 
   // GET all entries in table
-  // if (paths.size() == 1) {
 	if (paths[0] == read_entity_admin){
     table_query query {};
     table_query_iterator end;
@@ -272,7 +274,7 @@ void handle_get(http_request message) {
 			vector<value> key_vec;
 			prop_vals_t keys;
 			while(it != end){ // This while loop iterates through the table until it finds the requested partition
-				if( paths[1] == it->partition_key() ){
+				if( paths[2] == it->partition_key() ){
 					cout << "GET: " << it->partition_key() << " / " << it->row_key() << endl; 
 					keys = { make_pair("Partition",value::string(it->partition_key())), make_pair("Row",value::string(it->row_key())) };
 					keys = get_properties(it->properties(), keys);
@@ -294,13 +296,13 @@ void handle_get(http_request message) {
 	**CODE ADDED - STOP**
 	********************/
 
-  // GET specific entry: Partition == paths[1], Row == paths[2]
+  // GET specific entry: Partition == paths[2], Row == paths[3]
   if (paths.size() != 3) {
     message.reply (status_codes::BadRequest);
     return;
   }
 
-  table_operation retrieve_operation {table_operation::retrieve_entity(paths[1], paths[2])};
+  table_operation retrieve_operation {table_operation::retrieve_entity(paths[2], paths[3])};
   table_result retrieve_result {table.execute(retrieve_operation)};
   cout << "HTTP code: " << retrieve_result.http_status_code() << endl;
   if (retrieve_result.http_status_code() == status_codes::NotFound) {

@@ -346,7 +346,7 @@ int put_multi_properties_entity (const string& addr, const string& table, const 
 int update_property (const string& addr, const string& table, const value& properties){
   pair<status_code,value> result { 
     do_request(methods::PUT, 
-      addr + "UpdatePropertyAdmin/" + table, properties)};
+      addr + update_property_admin + "/" + table, properties)};
   return result.first;
 }
 
@@ -527,7 +527,7 @@ SUITE(GET) {
     CHECK_EQUAL(status_codes::NotFound, test_result.first);
 
     //Ensure bad requests get a 400 response (no partition name)
-    test_result = do_request (methods::GET, string(BasicFixture::addr) + string(BasicFixture::table) + "/" + row);
+    test_result = do_request (methods::GET, string(BasicFixture::addr) + get_entity_partition_admin + "/" + string(BasicFixture::table) + "/" + row);
     CHECK_EQUAL(status_codes::BadRequest, test_result.first);
 
 		//Add an element, check GET works
