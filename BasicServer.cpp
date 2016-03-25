@@ -189,7 +189,7 @@ void handle_get(http_request message) {
     return;
   }
 	
-	// paths[0] = ReadEntityAuth | paths[1] = <token> | paths[2] = <partition> | paths[3] = <row>
+	// paths[0] = ReadEntityAuth | paths[1] = <table name> | paths[2] = <token> | paths[3] = <partition> | paths[4] = <row>
 	if( paths[0] == read_entity_auth ){ // May need to move this body of code around if it interferes with the above or below functions.
 		if(paths.size() < 4){ // Less than four parameters were provided
 			message.reply(status_codes::BadRequest);
@@ -250,7 +250,6 @@ void handle_get(http_request message) {
 		/******************** 
 		**CODE ADDED - STOP**
 		********************/
-		// paths[0] = ReadEntityAdmin | paths[1] = <partition> | paths[2] = <row>
 		// GET all entries in table
 		if (paths.size() < 3){
 			table_query query {};
@@ -272,14 +271,15 @@ void handle_get(http_request message) {
 		**CODE ADDED - BEGIN**
 		**********************/
 		// GET all entities from a specific partition
-		if( paths[2] == "*" ){
+		// paths[0] = ReadEntityAdmin | paths[1] = <table name> | paths[2] = <partition> | paths[3] = <row>
+		if( paths[3] == "*" ){
 				table_query query {};
 				table_query_iterator end;
 				table_query_iterator it = table.execute_query(query);
 				vector<value> key_vec;
 				prop_vals_t keys;
 				while(it != end){ // This while loop iterates through the table until it finds the requested partition
-					if( paths[2] == it->partition_key() ){
+					if( paths[3] == it->partition_key() ){
 						cout << "GET: " << it->partition_key() << " / " << it->row_key() << endl; 
 						keys = { make_pair("Partition",value::string(it->partition_key())), make_pair("Row",value::string(it->row_key())) };
 						keys = get_properties(it->properties(), keys);
