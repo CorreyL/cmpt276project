@@ -28,6 +28,9 @@ using azure::storage::table_operation;
 using azure::storage::table_request_options;
 using azure::storage::table_result;
 using azure::storage::table_shared_access_policy;
+// Added these two in
+using azure::storage::table_query;
+using azure::storage::table_query_iterator;
 
 using std::cin;
 using std::cout;
@@ -129,7 +132,7 @@ unordered_map<string,string> get_json_body(http_request message) {
   Return a token for 24 hours of access to the specified table,
   for the single entity defind by the partition and row.
 
-  permissions: A bitwise OR ('|')  of table_shared_access_poligy::permission
+  permissions: A bitwise OR ('|')  of table_shared_access_policy::permission
     constants.
 
     For read-only:
@@ -181,7 +184,47 @@ void handle_get(http_request message) {
     message.reply(status_codes::BadRequest);
     return;
   }
-  message.reply(status_codes::NotImplemented);
+	cloud_table table {table_cache.lookup_table("AuthTable")};
+	cloud_table data_table {table_cache.lookup_table("DataTable")};
+	
+	unordered_map<string,string> json_body {get_json_body (message)};
+	
+	if( paths[0] == get_read_token_op ){
+		table_query query {};
+		table_query_iterator end;
+		table_query_iterator it = table.execute_query(query);
+		// vector<value> key_vec;
+		// prop_vals_t keys;
+		while(it != end){ // This while loop iterates through the table until it finds the requested partition
+			if( it->partition_key() == auth_table_userid_partition && it->row_key() == paths[1] ){
+				const table_entity::properties_type& properties = it->properties();
+				for (auto prop_it = properties.begin(); prop_it != properties.end(); ++prop_it) // Cycles through the properties of the current entity
+				{
+					//cout << ", " << prop_it->first << ": " << prop_it->second.str() << endl;
+					unordered_map<string,string>::const_iterator got = json_body.find(prop_it->first); // Looking for the property Password in the JSON Body
+					if( got->second == prop_it->second.str() ){ // The password passed in from the JSON Body matched the password in this entity in AuthTable
+						for (auto prop_it2 = properties.begin(); prop_it2 != properties.end(); ++prop_it2){
+							if(prop_it2->first == "DataPartition"){
+								string partition {prop_it2->second.str()};
+							}
+						}
+						for (auto prop_it3 = properties.begin(); prop_it3 != properties.end(); ++prop_it3){
+							if(prop_it3->first == "DataRow"){
+								string row {prop_it3->second.str()};
+							}
+						}
+						// pair<status_code,string> result = do_get_token (data_table, partition, row, uint8_t permissions);
+					}
+				}
+			}
+			++it;
+		}
+	}
+	
+	if( paths[0] == get_update_token_op){
+		
+	}
+  //message.reply(status_codes::NotImplemented);
 }
 
 /*
