@@ -24,7 +24,6 @@
 #include "make_unique.h"
 
 #include "azure_keys.h"
-
 #include "ServerUtils.h"
 
 using azure::storage::cloud_storage_account;
@@ -56,6 +55,7 @@ using std::vector;
 using web::http::http_headers;
 using web::http::http_request;
 using web::http::methods;
+using web::http::status_code;
 using web::http::status_codes;
 using web::http::uri;
 
@@ -189,29 +189,36 @@ void handle_get(http_request message) {
     return;
   }
 	
+	/********************* 
+	**CODE ADDED - BEGIN**
+	**********************/
 	// paths[0] = ReadEntityAuth | paths[1] = <table name> | paths[2] = <token> | paths[3] = <partition> | paths[4] = <row>
 	if( paths[0] == read_entity_auth ){ // May need to move this body of code around if it interferes with the above or below functions.
 		if(paths.size() < 4){ // Less than four parameters were provided
 			message.reply(status_codes::BadRequest);
 			return;
 		}
-		storage_credentials sas { storage_credentials(paths[1]) };
-		if( sas.is_sas() == true ){
-			std::cout << "The SAS matched!" << endl;
-			message.reply(status_codes::OK);
+		pair<status_code,table_entity> token { read_with_token(message, tables_endpoint) }; // Using the function from ServerUtils.cpp
+		if(token.first != status_codes::OK){
+			message.reply(status_codes::BadRequest);
 			return;
 		}
+		
+		table_entity entity {token.second};
+		table_entity::properties_type properties {entity.properties()};
+		
+		// If the entity has any properties, return them as JSON
+		prop_vals_t values (get_properties(properties));
+		if (values.size() > 0){
+			message.reply(status_codes::OK, value::object(values));
+		}
 		else{
-			std::cout << "The SAS did not match. Welp. =(" << endl;
-			message.reply(status_codes::BadRequest); // Invalid token
+			message.reply(status_codes::OK);
 			return;
 		}
 	}
 	
 	if(paths[0] == read_entity_admin){
-		/********************* 
-		**CODE ADDED - BEGIN**
-		**********************/
 		// Get all entities containing all specified properties
 		unordered_map<string,string> stored_message = get_json_body(message);
 		if( stored_message.size() > 0 ){
