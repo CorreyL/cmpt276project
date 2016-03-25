@@ -189,8 +189,21 @@ void handle_get(http_request message) {
     return;
   }
 	
+	// paths[0] = ReadEntityAuth | paths[1] = <token> | paths[2] = <partition> | paths[3] = <row>
 	if( paths[0] == read_entity_auth ){ // May need to move this body of code around if it interferes with the above or below functions.
-		// Code for ReadEntityAuth goes here!
+		if(paths.size() < 4){ // Less than four parameters were provided
+			message.reply(status_codes::BadRequest);
+			return;
+		}
+		storage_credentials sas {storage_credentials("cmpt276correy",paths[1])};
+		if( sas.is_sas() == true ){
+			std::cout << "Yee boi!" << endl;
+		}
+		else{
+			std::cout << "Welp =(" << endl;
+			message.reply(status_codes::BadRequest); // Invalid token
+			return;
+		}
 	}
 	
 	if(paths[0] == read_entity_admin){
@@ -233,14 +246,13 @@ void handle_get(http_request message) {
 			}
 			message.reply( status_codes::OK, value::array(key_vec) );
 			return;
-		
 		}
 		/******************** 
 		**CODE ADDED - STOP**
 		********************/
-
+		// paths[0] = ReadEntityAdmin | paths[1] = <partition> | paths[2] = <row>
 		// GET all entries in table
-		if (paths.size() < 2){
+		if (paths.size() < 3){
 			table_query query {};
 			table_query_iterator end;
 			table_query_iterator it = table.execute_query(query);
@@ -284,6 +296,7 @@ void handle_get(http_request message) {
 				message.reply(status_codes::OK, value::array(key_vec));
 				return;
 		}
+		
 		/******************** 
 		**CODE ADDED - STOP**
 		********************/
