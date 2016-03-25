@@ -1125,9 +1125,67 @@ SUITE(AUTH_GET_TOKENS) {
     CHECK_EQUAL (status_codes::OK, token_res.first);
     CHECK_EQUAL(true, token_res.second.find(readTokenIdentifier) != std::string::npos); // ie) token contains the little string that identifies it as read
   }
+
+  TEST_FIXTURE(AuthFixture, GetAnUpdateToken) {
+  string validUser_ID {AuthFixture::userid};
+  string validUser_pwd {AuthFixture::user_pwd};
+  string invalidUser_ID {"TomatoSoup"};
+  string invalidUser_pwd {"GrilledCheeseSandwich"};
+  string non_seven_bit_user_pwd {"( ͡° ͜ʖ °)"}; //This is supposed to be a lenny face, will it compile!?
+  string extraProperty {"Coffee"};
+  string extraPropertyValue {"10/10"};
+  string updateTokenIdentifier {"sp=ru"};
+
+  //Ensure various 404-deserving requests get one
+    //Invalid userId
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+    get_update_token(AuthFixture::auth_addr, invalidUser_ID, invalidUser_pwd)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (status_codes::NotFound, token_res.first);
+  
+    //Correct username with an invalid password
+    cout << "Requesting token" << endl;
+    token_res = {
+    get_update_token(AuthFixture::auth_addr, validUser_ID, invalidUser_pwd)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (status_codes::NotFound, token_res.first);
+
+  //Ensure various forms of bad requests get a 400 response
+    //Non 7-bit ASCII password
+    cout << "Requesting token" << endl;
+    token_res = {
+    get_update_token(AuthFixture::auth_addr, validUser_ID, non_seven_bit_user_pwd)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (status_codes::BadRequest, token_res.first);
+  
+    //No user ID
+    value pwd {build_json_object (vector<pair<string,string>> {make_pair("Password", validUser_pwd)})};
+    pair<status_code,value> result {do_request (methods::GET, AuthFixture::auth_addr + get_update_token_op + "/", pwd )};
+    CHECK_EQUAL (status_codes::BadRequest, result.first);
+  
+    //Extra Property
+    pwd = {build_json_object (vector<pair<string,string>> {make_pair("Password", validUser_pwd), make_pair(extraProperty, extraPropertyValue)})};
+    result = {do_request (methods::GET, AuthFixture::auth_addr + get_update_token_op + "/" + validUser_ID, pwd )};
+    CHECK_EQUAL (status_codes::BadRequest, result.first);
+  
+    //No password provided, either by not including it in request or by not having a password property on the value
+    pwd = {build_json_object (vector<pair<string,string>> {make_pair(extraProperty, extraPropertyValue)})};
+    result = {do_request (methods::GET, AuthFixture::auth_addr + get_update_token_op + "/" + validUser_ID)};
+    CHECK_EQUAL (status_codes::BadRequest, result.first);
+    result = {do_request (methods::GET, AuthFixture::auth_addr + get_update_token_op + "/" + validUser_ID, pwd)};
+    CHECK_EQUAL (status_codes::BadRequest, result.first);
+
+  //Ensure a correct token request get an update token
+    cout << "Requesting token" << endl;
+    token_res = {
+    get_update_token(AuthFixture::auth_addr, validUser_ID, validUser_pwd)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (status_codes::OK, token_res.first);
+    CHECK_EQUAL(true, token_res.second.find(updateTokenIdentifier) != std::string::npos); // ie) token contains the little string that identifies it as update
+  }
+
 }
-
-
 
 //Ted's test, I think it tests the new BasicServer operations? Breaks really hard as of writing this comment
 SUITE(UPDATE_AUTH) {
