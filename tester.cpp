@@ -52,10 +52,6 @@ const string update_entity_auth {"UpdateEntityAuth"};
 const string get_read_token_op  {"GetReadToken"};
 const string get_update_token_op {"GetUpdateToken"};
 
-// The two required operations from Assignment 1
-const string get_entity_partition_admin {"GetEntityPartitionAdmin"};
-const string get_entity_properties_admin {"GetEntityPropertiesAdmin"};
-
 // The two optional operations from Assignment 1
 const string add_property_admin {"AddPropertyAdmin"};
 const string update_property_admin {"UpdatePropertyAdmin"};
@@ -322,17 +318,17 @@ int delete_entity (const string& addr, const string& table, const string& partit
 **********************/
 
 pair<status_code,value> get_partition_entity (const string& addr, const string& table, const string& partition, const string& row){
-	pair<status_code,value> result {do_request(methods::GET, addr + get_entity_partition_admin + "/" + table + "/" + partition + "/" + row) };
+	pair<status_code,value> result {do_request(methods::GET, addr + read_entity_admin + "/" + table + "/" + partition + "/" + row) };
 	return result;
 }
 
 pair<status_code,value> get_Entities_from_property (const string& addr, const string& table, const string& prop, const string& pstring){
-	pair<status_code,value> result { do_request(methods::GET, addr + get_entity_properties_admin + "/" + table, value::object(vector<pair<string,value>> {make_pair(prop, value::string(pstring))}))};
+	pair<status_code,value> result { do_request(methods::GET, addr + read_entity_admin + "/" + table, value::object(vector<pair<string,value>> {make_pair(prop, value::string(pstring))}))};
 	return result;
 }
 
 pair<status_code,value> get_spec_properties_entity (const string& addr, const string& table, const value& properties){
-  pair<status_code,value> result { do_request(methods::GET, addr + get_entity_properties_admin + "/" + table, properties)};
+  pair<status_code,value> result { do_request(methods::GET, addr + read_entity_admin + "/" + table, properties)};
   return result;
 }
 
@@ -455,7 +451,7 @@ SUITE(GET) {
     pair<status_code,value> result {
       do_request (methods::GET,
 		  string(BasicFixture::addr)
-      + get_entity_partition_admin + "/"
+      + read_entity_admin + "/"
 		  + BasicFixture::table + "/"
 		  + BasicFixture::partition + "/"
 		  + BasicFixture::row)};
@@ -536,7 +532,7 @@ SUITE(GET) {
     CHECK_EQUAL(status_codes::NotFound, test_result.first);
 
     //Ensure bad requests get a 400 response (no partition name)
-    test_result = do_request (methods::GET, string(BasicFixture::addr) + get_entity_partition_admin + "/" + string(BasicFixture::table) + "/" + row);
+    test_result = do_request (methods::GET, string(BasicFixture::addr) + read_entity_admin + "/" + string(BasicFixture::table) + "/" + row);
     CHECK_EQUAL(status_codes::BadRequest, test_result.first);
 
 		//Add an element, check GET works

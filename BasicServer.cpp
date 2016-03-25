@@ -279,7 +279,7 @@ void handle_get(http_request message) {
 				vector<value> key_vec;
 				prop_vals_t keys;
 				while(it != end){ // This while loop iterates through the table until it finds the requested partition
-					if( paths[3] == it->partition_key() ){
+					if( paths[2] == it->partition_key() ){
 						cout << "GET: " << it->partition_key() << " / " << it->row_key() << endl; 
 						keys = { make_pair("Partition",value::string(it->partition_key())), make_pair("Row",value::string(it->row_key())) };
 						keys = get_properties(it->properties(), keys);
