@@ -195,12 +195,14 @@ void handle_get(http_request message) {
 			message.reply(status_codes::BadRequest);
 			return;
 		}
-		storage_credentials sas {storage_credentials("cmpt276correy",paths[1])};
+		storage_credentials sas { storage_credentials(paths[1]) };
 		if( sas.is_sas() == true ){
-			std::cout << "Yee boi!" << endl;
+			std::cout << "The SAS matched!" << endl;
+			message.reply(status_codes::OK);
+			return;
 		}
 		else{
-			std::cout << "Welp =(" << endl;
+			std::cout << "The SAS did not match. Welp. =(" << endl;
 			message.reply(status_codes::BadRequest); // Invalid token
 			return;
 		}
