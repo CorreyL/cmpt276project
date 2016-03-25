@@ -196,7 +196,7 @@ void handle_get(http_request message) {
 		// vector<value> key_vec;
 		// prop_vals_t keys;
 		while(it != end){ // This while loop iterates through the table until it finds the requested partition
-			if( it->partition_key() == auth_table_userid_partition && it->row_key() == paths[1] ){
+			if( it->partition_key() == auth_table_userid_partition && it->row_key() == paths[1] ){ // Find Partition: Userid && Row: <The Userid passed in>
 				const table_entity::properties_type& properties = it->properties();
 				for (auto prop_it = properties.begin(); prop_it != properties.end(); ++prop_it) // Cycles through the properties of the current entity
 				{
@@ -233,6 +233,8 @@ void handle_get(http_request message) {
 			}
 			++it;
 		}
+		message.reply( status_codes::BadRequest ); // Either the Userid || Userid/Password combination has not been found
+		return;
 	}
 	
 	if( paths[0] == get_update_token_op){
