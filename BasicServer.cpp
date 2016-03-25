@@ -72,16 +72,10 @@ const string delete_table {"DeleteTableAdmin"};
 const string update_entity {"UpdateEntityAdmin"};
 const string delete_entity {"DeleteEntityAdmin"};
 const string read_entity_admin {"ReadEntityAdmin"};
-/********************* 
-**CODE ADDED - BEGIN**
-**********************/
-const string get_entity_partition {"GetEntityPartitionAdmin"};
-const string get_entity_properties {"GetEntityPropertiesAdmin"};
+const string read_entity_auth {"ReadEntityAuth"};
+const string update_entity_auth {"UpdateEntityAuth"};
 const string add_property_admin {"AddPropertyAdmin"};
 const string update_property_admin {"UpdatePropertyAdmin"};
-/******************** 
-**CODE ADDED - STOP**
-********************/
 
 
 /*
@@ -195,11 +189,11 @@ void handle_get(http_request message) {
     return;
   }
 	
-	if( paths[0] == ReadEntityAuth ){ // May need to move this body of code around if it interferes with the above or below functions.
+	if( paths[0] == read_entity_auth ){ // May need to move this body of code around if it interferes with the above or below functions.
 		// Code for ReadEntityAuth goes here!
 	}
 	
-	if(paths[0] == ReadEntityAdmin){
+	if(paths[0] == read_entity_admin){
 		/********************* 
 		**CODE ADDED - BEGIN**
 		**********************/
@@ -420,7 +414,7 @@ void handle_put(http_request message) {
 		return;
 	}
 	
-	if( paths[0] == UpdateEntityAuth ){ // May need to move this body of code around if it interferes with the above or below functions.
+	if( paths[0] == update_entity_auth ){ // May need to move this body of code around if it interferes with the above or below functions.
 		// Code for UpdateEntityAuth goes here!
 	}
 	
