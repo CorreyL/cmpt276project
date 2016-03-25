@@ -188,7 +188,7 @@ void handle_get(http_request message) {
 	cloud_table data_table {table_cache.lookup_table("DataTable")};
 	
 	unordered_map<string,string> json_body {get_json_body (message)};
-	
+
 	if( paths[0] == get_read_token_op ){
 		table_query query {};
 		table_query_iterator end;
