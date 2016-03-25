@@ -188,48 +188,64 @@ void handle_get(http_request message) {
 	cloud_table data_table {table_cache.lookup_table("DataTable")};
 	
 	unordered_map<string,string> json_body {get_json_body (message)};
-
+	// paths[0] = GetReadToken | paths[1] = <table name> | paths[2] = <partition> | paths[3] = <row>
 	if( paths[0] == get_read_token_op ){
 		table_query query {};
 		table_query_iterator end;
 		table_query_iterator it = table.execute_query(query);
-		// vector<value> key_vec;
-		// prop_vals_t keys;
+		if( json_body.size() < 1 ){ // No JSON body passed in
+			message.reply( status_codes::BadRequest );
+			return;
+		}
+		if( json_body.size() > 1 ){ // Extra properties passed in
+			message.reply( status_codes::BadRequest );
+			return;
+		}
 		while(it != end){ // This while loop iterates through the table until it finds the requested partition
 			if( it->partition_key() == auth_table_userid_partition && it->row_key() == paths[1] ){ // Find Partition: Userid && Row: <The Userid passed in>
 				const table_entity::properties_type& properties = it->properties();
 				for (auto prop_it = properties.begin(); prop_it != properties.end(); ++prop_it) // Cycles through the properties of the current entity
 				{
-					//cout << ", " << prop_it->first << ": " << prop_it->second.str() << endl;
-					unordered_map<string,string>::const_iterator got = json_body.find(prop_it->first); // Looking for the property Password in the JSON Body
-					bool cond1 {false};
-					bool cond2 {false};
-					string partition;
-					string row;
-					if( got->second == prop_it->second.str() ){ // The password passed in from the JSON Body matched the password in this entity in AuthTable
-						for (auto prop_it2 = properties.begin(); prop_it2 != properties.end(); ++prop_it2){
-							if(prop_it2->first == "DataPartition"){
-								partition = prop_it2->second.str();
-								cond1 = true;
-							}
-							if(prop_it2->first == "DataRow"){
-								row = prop_it2->second.str();
-								cond2 = true;
-							}
-						}
-						if(cond1 == true && cond2 == true){ // The Partition and Row this Userid/Password combination allows for are found in the Properties of the entity in AuthTable
-							pair<status_code,string> result = do_get_token (data_table, partition, row, table_shared_access_policy::permissions::read);
-							if(result.first == status_codes::InternalError){
-								message.reply( status_codes::InternalError );
-								return;
-							}
-							else if(result.first == status_codes::OK){
-								message.reply( status_codes::OK, result.second );
-								return;
-							}
-						}
-						else{ // The DataPartition or DataRow passed in was not found in DataTable
+					if(prop_it->first == "Password"){
+						//cout << ", " << prop_it->first << ": " << prop_it->second.str() << endl;
+						unordered_map<string,string>::const_iterator got = json_body.find(prop_it->first); // Looking for the property Password in the JSON Body
+						if( got == json_body.end() ){ // The property "Password" was not found in the JSON body
 							message.reply( status_codes::BadRequest );
+							return;
+						}
+						bool cond1 {false};
+						bool cond2 {false};
+						string partition;
+						string row;
+						if( got->second == prop_it->second.str() ){ // The password passed in from the JSON Body matched the password in this entity in AuthTable
+							for (auto prop_it2 = properties.begin(); prop_it2 != properties.end(); ++prop_it2){
+								if(prop_it2->first == "DataPartition"){
+									partition = prop_it2->second.str();
+									cond1 = true;
+								}
+								if(prop_it2->first == "DataRow"){
+									row = prop_it2->second.str();
+									cond2 = true;
+								}
+							}
+							if(cond1 == true && cond2 == true){ // The Partition and Row this Userid/Password combination allows for are found in the Properties of the entity in AuthTable
+								pair<status_code,string> result = do_get_token (data_table, partition, row, table_shared_access_policy::permissions::read);
+								if(result.first == status_codes::InternalError){
+									message.reply( status_codes::InternalError );
+									return;
+								}
+								else if(result.first == status_codes::OK){
+									message.reply( status_codes::OK, result.second );
+									return;
+								}
+							}
+							else{ // The DataPartition or DataRow passed in was not found in DataTable
+								message.reply( status_codes::BadRequest );
+								return;
+							}
+						}
+						else{
+							message.reply( status_codes::NotFound ); // The password does not match the Userid
 							return;
 						}
 					}
@@ -237,51 +253,67 @@ void handle_get(http_request message) {
 			}
 			++it;
 		}
-		message.reply( status_codes::NotFound ); // Either the Userid || Userid/Password combination has not been found
+		message.reply( status_codes::NotFound ); // Userid was not found
 		return;
 	}
 	
-	if( paths[0] == get_update_token_op){
+	if( paths[0] == get_update_token_op ){
 		table_query query {};
 		table_query_iterator end;
 		table_query_iterator it = table.execute_query(query);
-		// vector<value> key_vec;
-		// prop_vals_t keys;
+		if( json_body.size() < 1 ){ // No JSON body passed in
+			message.reply( status_codes::BadRequest );
+			return;
+		}
+		if( json_body.size() > 1 ){ // Extra properties passed in
+			message.reply( status_codes::BadRequest );
+			return;
+		}
 		while(it != end){ // This while loop iterates through the table until it finds the requested partition
 			if( it->partition_key() == auth_table_userid_partition && it->row_key() == paths[1] ){ // Find Partition: Userid && Row: <The Userid passed in>
 				const table_entity::properties_type& properties = it->properties();
 				for (auto prop_it = properties.begin(); prop_it != properties.end(); ++prop_it) // Cycles through the properties of the current entity
 				{
-					//cout << ", " << prop_it->first << ": " << prop_it->second.str() << endl;
-					unordered_map<string,string>::const_iterator got = json_body.find(prop_it->first); // Looking for the property Password in the JSON Body
-					bool cond1 {false};
-					bool cond2 {false};
-					string partition;
-					string row;
-					if( got->second == prop_it->second.str() ){ // The password passed in from the JSON Body matched the password in this entity in AuthTable
-						for (auto prop_it2 = properties.begin(); prop_it2 != properties.end(); ++prop_it2){
-							if(prop_it2->first == "DataPartition"){
-								partition = prop_it2->second.str();
-								cond1 = true;
-							}
-							if(prop_it2->first == "DataRow"){
-								row = prop_it2->second.str();
-								cond2 = true;
-							}
-						}
-						if(cond1 == true && cond2 == true){ // The Partition and Row this Userid/Password combination allows for are found in the Properties of the entity in AuthTable
-							pair<status_code,string> result = do_get_token (data_table, partition, row, table_shared_access_policy::permissions::read | table_shared_access_policy::permissions::update);
-							if(result.first == status_codes::InternalError){
-								message.reply( status_codes::InternalError );
-								return;
-							}
-							else if(result.first == status_codes::OK){
-								message.reply( status_codes::OK, result.second );
-								return;
-							}
-						}
-						else{ // The DataPartition or DataRow passed in was not found in DataTable
+					if(prop_it->first == "Password"){
+						//cout << ", " << prop_it->first << ": " << prop_it->second.str() << endl;
+						unordered_map<string,string>::const_iterator got = json_body.find(prop_it->first); // Looking for the property Password in the JSON Body
+						if( got == json_body.end() ){ // The property "Password" was not found in the JSON body
 							message.reply( status_codes::BadRequest );
+							return;
+						}
+						bool cond1 {false};
+						bool cond2 {false};
+						string partition;
+						string row;
+						if( got->second == prop_it->second.str() ){ // The password passed in from the JSON Body matched the password in this entity in AuthTable
+							for (auto prop_it2 = properties.begin(); prop_it2 != properties.end(); ++prop_it2){
+								if(prop_it2->first == "DataPartition"){
+									partition = prop_it2->second.str();
+									cond1 = true;
+								}
+								if(prop_it2->first == "DataRow"){
+									row = prop_it2->second.str();
+									cond2 = true;
+								}
+							}
+							if(cond1 == true && cond2 == true){ // The Partition and Row this Userid/Password combination allows for are found in the Properties of the entity in AuthTable
+								pair<status_code,string> result = do_get_token (data_table, partition, row, table_shared_access_policy::permissions::read | table_shared_access_policy::permissions::update);
+								if(result.first == status_codes::InternalError){
+									message.reply( status_codes::InternalError );
+									return;
+								}
+								else if(result.first == status_codes::OK){
+									message.reply( status_codes::OK, result.second );
+									return;
+								}
+							}
+							else{ // The DataPartition or DataRow passed in was not found in DataTable
+								message.reply( status_codes::BadRequest );
+								return;
+							}
+						}
+						else{
+							message.reply( status_codes::NotFound ); // The password does not match the Userid
 							return;
 						}
 					}
@@ -289,10 +321,10 @@ void handle_get(http_request message) {
 			}
 			++it;
 		}
-		message.reply( status_codes::NotFound ); // Either the Userid || Userid/Password combination has not been found
+		message.reply( status_codes::NotFound ); // Userid was not found
 		return;
-	}
   //message.reply(status_codes::NotImplemented);
+	}
 }
 
 /*
