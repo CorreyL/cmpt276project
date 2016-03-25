@@ -280,6 +280,10 @@ void handle_get(http_request message) {
 								return;
 							}
 						}
+						else{ // The DataPartition or DataRow passed in was not found in DataTable
+							message.reply( status_codes::BadRequest );
+							return;
+						}
 					}
 				}
 			}
