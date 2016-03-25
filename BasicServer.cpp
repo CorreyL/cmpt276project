@@ -194,102 +194,106 @@ void handle_get(http_request message) {
     message.reply(status_codes::NotFound);
     return;
   }
-	/********************* 
-	**CODE ADDED - BEGIN**
-	**********************/
-	// Get all entities containing all specified properties
-	unordered_map<string,string> stored_message = get_json_body(message);
-	// if( stored_message.size() > 0 ){
-	if( paths[0] == get_entity_properties ){
-		table_query query {};
-		table_query_iterator end;
-		table_query_iterator it = table.execute_query(query);
-		table_entity entity;
-		prop_vals_t keys;
-		vector<value> key_vec;
-		
-		int equal {0};
-
-		while(it != end){
-			equal = 0;
-			
-			const table_entity::properties_type& properties = it->properties();
-		  for (auto prop_it = properties.begin(); prop_it != properties.end(); ++prop_it) // Cycles through the properties of the current entity
-			{
-        //cout << ", " << prop_it->first << ": " << prop_it->second.str() << endl;
-				unordered_map<string,string>::const_iterator got = stored_message.find(prop_it->first);
-				if( got != stored_message.end() ){ // A property from the JSON body was found in the entity
-					equal++;
-				}
-			}
-			
-			if( equal == stored_message.size() ){ // All properties from the JSON body were found in the entity
-			cout << "Partition: " << it->partition_key() << " / Row: " << it->row_key() << endl;
-					keys = { make_pair("Partition",value::string(it->partition_key())), make_pair("Row",value::string(it->row_key())) };
-					keys = get_properties(it->properties(), keys);
-					key_vec.push_back(value::object(keys));
-			}
-			
-			++it;
-		}
-		message.reply( status_codes::OK, value::array(key_vec) );
-		return;
 	
+	if( paths[0] == ReadEntityAuth ){ // May need to move this body of code around if it interferes with the above or below functions.
+		// Code for ReadEntityAuth goes here!
 	}
-	/******************** 
-	**CODE ADDED - STOP**
-	********************/
-
-  // GET all entries in table
-	if (paths[0] == read_entity_admin){
-    table_query query {};
-    table_query_iterator end;
-    table_query_iterator it = table.execute_query(query);
-    vector<value> key_vec;
-    while (it != end) {
-      cout << "Key: " << it->partition_key() << " / " << it->row_key() << endl;
-      prop_vals_t keys { make_pair("Partition",value::string(it->partition_key())), make_pair("Row", value::string(it->row_key())) };
-      keys = get_properties(it->properties(), keys);
-      key_vec.push_back(value::object(keys));
-      ++it;
-    }
-    message.reply(status_codes::OK, value::array(key_vec));
-    return;
-  }
 	
-	/********************* 
-	**CODE ADDED - BEGIN**
-	**********************/
-	// GET all entities from a specific partition
-	if( paths[0] == get_entity_partition ){
-	// if( paths[2] == "*" ){
+	if(paths[0] == ReadEntityAdmin){
+		/********************* 
+		**CODE ADDED - BEGIN**
+		**********************/
+		// Get all entities containing all specified properties
+		unordered_map<string,string> stored_message = get_json_body(message);
+		if( stored_message.size() > 0 ){
+			table_query query {};
+			table_query_iterator end;
+			table_query_iterator it = table.execute_query(query);
+			table_entity entity;
+			prop_vals_t keys;
+			vector<value> key_vec;
+			
+			int equal {0};
+
+			while(it != end){
+				equal = 0;
+				
+				const table_entity::properties_type& properties = it->properties();
+				for (auto prop_it = properties.begin(); prop_it != properties.end(); ++prop_it) // Cycles through the properties of the current entity
+				{
+					//cout << ", " << prop_it->first << ": " << prop_it->second.str() << endl;
+					unordered_map<string,string>::const_iterator got = stored_message.find(prop_it->first);
+					if( got != stored_message.end() ){ // A property from the JSON body was found in the entity
+						equal++;
+					}
+				}
+				
+				if( equal == stored_message.size() ){ // All properties from the JSON body were found in the entity
+				cout << "Partition: " << it->partition_key() << " / Row: " << it->row_key() << endl;
+						keys = { make_pair("Partition",value::string(it->partition_key())), make_pair("Row",value::string(it->row_key())) };
+						keys = get_properties(it->properties(), keys);
+						key_vec.push_back(value::object(keys));
+				}
+				
+				++it;
+			}
+			message.reply( status_codes::OK, value::array(key_vec) );
+			return;
+		
+		}
+		/******************** 
+		**CODE ADDED - STOP**
+		********************/
+
+		// GET all entries in table
+		if (paths.size() < 2){
 			table_query query {};
 			table_query_iterator end;
 			table_query_iterator it = table.execute_query(query);
 			vector<value> key_vec;
-			prop_vals_t keys;
-			while(it != end){ // This while loop iterates through the table until it finds the requested partition
-				if( paths[2] == it->partition_key() ){
-					cout << "GET: " << it->partition_key() << " / " << it->row_key() << endl; 
-					keys = { make_pair("Partition",value::string(it->partition_key())), make_pair("Row",value::string(it->row_key())) };
-					keys = get_properties(it->properties(), keys);
-					key_vec.push_back(value::object(keys));
-				}
+			while (it != end) {
+				cout << "Key: " << it->partition_key() << " / " << it->row_key() << endl;
+				prop_vals_t keys { make_pair("Partition",value::string(it->partition_key())), make_pair("Row", value::string(it->row_key())) };
+				keys = get_properties(it->properties(), keys);
+				key_vec.push_back(value::object(keys));
 				++it;
 			}
-			
-			if( keys.empty() ){ // The requested partition is not a part of the table
-				message.reply(status_codes::NotFound);
-				return;
-			}
-			
 			message.reply(status_codes::OK, value::array(key_vec));
 			return;
+		}
+		
+		/********************* 
+		**CODE ADDED - BEGIN**
+		**********************/
+		// GET all entities from a specific partition
+		if( paths[2] == "*" ){
+				table_query query {};
+				table_query_iterator end;
+				table_query_iterator it = table.execute_query(query);
+				vector<value> key_vec;
+				prop_vals_t keys;
+				while(it != end){ // This while loop iterates through the table until it finds the requested partition
+					if( paths[2] == it->partition_key() ){
+						cout << "GET: " << it->partition_key() << " / " << it->row_key() << endl; 
+						keys = { make_pair("Partition",value::string(it->partition_key())), make_pair("Row",value::string(it->row_key())) };
+						keys = get_properties(it->properties(), keys);
+						key_vec.push_back(value::object(keys));
+					}
+					++it;
+				}
+				
+				if( keys.empty() ){ // The requested partition is not a part of the table
+					message.reply(status_codes::NotFound);
+					return;
+				}
+				
+				message.reply(status_codes::OK, value::array(key_vec));
+				return;
+		}
+		/******************** 
+		**CODE ADDED - STOP**
+		********************/
 	}
-	
-	/******************** 
-	**CODE ADDED - STOP**
-	********************/
 
   // GET specific entry: Partition == paths[2], Row == paths[3]
   if (paths.size() != 3) {
@@ -414,6 +418,10 @@ void handle_put(http_request message) {
 		
 		message.reply(status_codes::OK);
 		return;
+	}
+	
+	if( paths[0] == UpdateEntityAuth ){ // May need to move this body of code around if it interferes with the above or below functions.
+		// Code for UpdateEntityAuth goes here!
 	}
 	
 	if( paths[0] == update_property_admin ){
