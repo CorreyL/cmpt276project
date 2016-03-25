@@ -202,12 +202,12 @@ void handle_get(http_request message) {
 				{
 					//cout << ", " << prop_it->first << ": " << prop_it->second.str() << endl;
 					unordered_map<string,string>::const_iterator got = json_body.find(prop_it->first); // Looking for the property Password in the JSON Body
+					bool cond1 {false};
+					bool cond2 {false};
+					string partition;
+					string row;
 					if( got->second == prop_it->second.str() ){ // The password passed in from the JSON Body matched the password in this entity in AuthTable
 						for (auto prop_it2 = properties.begin(); prop_it2 != properties.end(); ++prop_it2){
-							bool cond1 {false};
-							bool cond2 {false};
-							string partition;
-							string row;
 							if(prop_it2->first == "DataPartition"){
 								partition = prop_it2->second.str();
 								cond1 = true;
@@ -216,16 +216,16 @@ void handle_get(http_request message) {
 								row = prop_it2->second.str();
 								cond2 = true;
 							}
-							if(cond1 == true && cond2 == true){
-								pair<status_code,string> result = do_get_token (data_table, partition, row, table_shared_access_policy::permissions::read);
-								if(result.first == status_codes::InternalError){
-									message.reply( status_codes::InternalError );
-									return;
-								}
-								else if(result.first == status_codes::OK){
-									message.reply( status_codes::OK, result.second );
-									return;
-								}
+						}
+						if(cond1 == true && cond2 == true){ // The Partition and Row this Userid/Password combination allows for are found in the Properties of the entity in AuthTable
+							pair<status_code,string> result = do_get_token (data_table, partition, row, table_shared_access_policy::permissions::read);
+							if(result.first == status_codes::InternalError){
+								message.reply( status_codes::InternalError );
+								return;
+							}
+							else if(result.first == status_codes::OK){
+								message.reply( status_codes::OK, result.second );
+								return;
 							}
 						}
 					}
