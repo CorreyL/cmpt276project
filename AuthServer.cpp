@@ -53,6 +53,7 @@ using web::json::value;
 
 using web::http::experimental::listener::http_listener;
 
+using prop_vals_t = vector<pair<string,value>>;
 using prop_str_vals_t = vector<pair<string,string>>;
 
 constexpr const char* def_url = "http://localhost:34570";
@@ -235,7 +236,10 @@ void handle_get(http_request message) {
 									return;
 								}
 								else if(result.first == status_codes::OK){
-									message.reply( status_codes::OK, result.second );
+									prop_vals_t keys { make_pair("Password",value::string(result.second)) };
+									vector<value> key_vec;
+									key_vec.push_back(value::object(keys));
+									message.reply( status_codes::OK, value::array(key_vec) );
 									return;
 								}
 							}
@@ -303,7 +307,10 @@ void handle_get(http_request message) {
 									return;
 								}
 								else if(result.first == status_codes::OK){
-									message.reply( status_codes::OK, result.second );
+									prop_vals_t keys { make_pair("Password",value::string(result.second)) };
+									vector<value> key_vec;
+									key_vec.push_back(value::object(keys));
+									message.reply( status_codes::OK, value::array(key_vec) );
 									return;
 								}
 							}
