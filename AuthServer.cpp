@@ -218,6 +218,11 @@ void handle_get(http_request message) {
 						bool cond2 {false};
 						string partition;
 						string row;
+						string the_password = got->second;
+						if( the_password.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890~!@#$%^&*()_+=-") != std::string::npos ){ // Checking if the password is within the valid ASCII range
+							message.reply( status_codes::BadRequest );
+							return;
+						}
 						if( got->second == prop_it->second.str() ){ // The password passed in from the JSON Body matched the password in this entity in AuthTable
 							for (auto prop_it2 = properties.begin(); prop_it2 != properties.end(); ++prop_it2){
 								if(prop_it2->first == "DataPartition"){
@@ -237,8 +242,6 @@ void handle_get(http_request message) {
 								}
 								else if(result.first == status_codes::OK){
 									prop_vals_t keys { make_pair("Password",value::string(result.second)) };
-									// vector<value> key_vec;
-									// key_vec.push_back(value::object(keys));
 									message.reply( status_codes::OK, value::object(keys) );
 									return;
 								}
@@ -289,6 +292,11 @@ void handle_get(http_request message) {
 						bool cond2 {false};
 						string partition;
 						string row;
+						string the_password = got->second;
+						if( the_password.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890~!@#$%^&*()_+=-") != std::string::npos ){ // Checking if the password is within the valid ASCII range
+							message.reply( status_codes::BadRequest );
+							return;
+						}
 						if( got->second == prop_it->second.str() ){ // The password passed in from the JSON Body matched the password in this entity in AuthTable
 							for (auto prop_it2 = properties.begin(); prop_it2 != properties.end(); ++prop_it2){
 								if(prop_it2->first == "DataPartition"){
@@ -308,8 +316,6 @@ void handle_get(http_request message) {
 								}
 								else if(result.first == status_codes::OK){
 									prop_vals_t keys { make_pair("Password",value::string(result.second)) };
-									// vector<value> key_vec;
-									// key_vec.push_back(value::object(keys));
 									message.reply( status_codes::OK, value::object(keys) );
 									return;
 								}
