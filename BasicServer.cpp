@@ -66,7 +66,6 @@ using web::http::experimental::listener::http_listener;
 using prop_vals_t = vector<pair<string,value>>;
 
 constexpr const char* def_url = "http://localhost:34568";
-const string tables_endpoint {"http://cmpt276correy.table.core.windows.net/"};
 
 const string create_table {"CreateTableAdmin"};
 const string delete_table {"DeleteTableAdmin"};

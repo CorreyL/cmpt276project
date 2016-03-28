@@ -237,9 +237,9 @@ void handle_get(http_request message) {
 								}
 								else if(result.first == status_codes::OK){
 									prop_vals_t keys { make_pair("Password",value::string(result.second)) };
-									vector<value> key_vec;
-									key_vec.push_back(value::object(keys));
-									message.reply( status_codes::OK, value::array(key_vec) );
+									// vector<value> key_vec;
+									// key_vec.push_back(value::object(keys));
+									message.reply( status_codes::OK, value::object(keys) );
 									return;
 								}
 							}
@@ -308,9 +308,9 @@ void handle_get(http_request message) {
 								}
 								else if(result.first == status_codes::OK){
 									prop_vals_t keys { make_pair("Password",value::string(result.second)) };
-									vector<value> key_vec;
-									key_vec.push_back(value::object(keys));
-									message.reply( status_codes::OK, value::array(key_vec) );
+									// vector<value> key_vec;
+									// key_vec.push_back(value::object(keys));
+									message.reply( status_codes::OK, value::object(keys) );
 									return;
 								}
 							}
