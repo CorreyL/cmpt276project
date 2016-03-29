@@ -241,7 +241,7 @@ void handle_get(http_request message) {
 									return;
 								}
 								else if(result.first == status_codes::OK){
-									prop_vals_t keys { make_pair("Password",value::string(result.second)) };
+									prop_vals_t keys { make_pair("token",value::string(result.second)) };
 									message.reply( status_codes::OK, value::object(keys) );
 									return;
 								}
@@ -315,7 +315,7 @@ void handle_get(http_request message) {
 									return;
 								}
 								else if(result.first == status_codes::OK){
-									prop_vals_t keys { make_pair("Password",value::string(result.second)) };
+									prop_vals_t keys { make_pair("token",value::string(result.second)) };
 									message.reply( status_codes::OK, value::object(keys) );
 									return;
 								}
