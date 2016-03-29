@@ -437,21 +437,27 @@ void handle_put(http_request message) {
 	}
 	
 	if( paths[0] == update_entity_auth ){ // May need to move this body of code around if it interferes with the above or below functions.
-		
-        
         if(paths.size() < 4){ // Less than four parameters were provided
             message.reply(status_codes::BadRequest);
             return;
         }
-        
-        
-        unordered_map<string,string> stored_message = get_json_body(message);
-        status_code token { update_with_token(message, tables_endpoint, stored_message)};
+        // unordered_map<string,string> stored_message = get_json_body(message);
+				status_code token;
+				try{
+					token = update_with_token(message, tables_endpoint, stored_message);
+				}
+				catch (const storage_exception& e) {
+					cout << "Azure Table Storage error: " << e.what() << endl;
+					cout << e.result().extended_error().message() << endl;
+					if (e.result().http_status_code() == status_codes::Forbidden)
+						message.reply(status_codes::Forbidden);
+					else
+						message.reply(status_codes::InternalError);
+				}
         if(token != status_codes::OK){
             message.reply(status_codes::BadRequest);
             return;
         }
-        
         message.reply(status_codes::OK);
         return;
 	}
