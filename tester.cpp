@@ -478,8 +478,6 @@ SUITE(GET) {
       
     value obj1 {
       value::object(vector<pair<string,value>> {
-          make_pair(string("Partition"), value::string(partition)),
-          make_pair(string("Row"), value::string(row)),
           make_pair(string("Song"), value::string(prop_val))
       })
     };
