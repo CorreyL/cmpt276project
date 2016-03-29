@@ -200,7 +200,7 @@ void handle_get(http_request message) {
 		}
 		pair<status_code,table_entity> token { read_with_token(message, tables_endpoint) }; // Using the function from ServerUtils.cpp
 		if(token.first != status_codes::OK){
-			message.reply(status_codes::BadRequest);
+			message.reply(status_codes::NotFound);
 			return;
 		}
 		
@@ -441,7 +441,6 @@ void handle_put(http_request message) {
             message.reply(status_codes::BadRequest);
             return;
         }
-        // unordered_map<string,string> stored_message = get_json_body(message);
 				status_code token;
 				try{
 					token = update_with_token(message, tables_endpoint, stored_message);
@@ -455,7 +454,7 @@ void handle_put(http_request message) {
 						message.reply(status_codes::InternalError);
 				}
         if(token != status_codes::OK){
-            message.reply(status_codes::BadRequest);
+            message.reply(status_codes::NotFound);
             return;
         }
         message.reply(status_codes::OK);
