@@ -1165,15 +1165,15 @@ SUITE(AUTH_GET_TOKENS) {
     get_update_token(AuthFixture::auth_addr, validUser_ID, invalidUser_pwd)};
     cout << "Token response " << token_res.first << endl;
     CHECK_EQUAL (status_codes::NotFound, token_res.first);
-    
-    //Ensure various forms of bad requests get a 400 response
+
+  //Ensure various forms of bad requests get a 400 response
     //Non 7-bit ASCII password
     cout << "Requesting token" << endl;
     token_res = {
     get_update_token(AuthFixture::auth_addr, validUser_ID, non_seven_bit_user_pwd)};
     cout << "Token response " << token_res.first << endl;
     CHECK_EQUAL (status_codes::BadRequest, token_res.first);
-    
+
     //No user ID
     value pwd {build_json_object (vector<pair<string,string>> {make_pair("Password", validUser_pwd)})};
     cout << "Requesting token" << endl;
@@ -1250,24 +1250,25 @@ SUITE(ENTITY_AUTH) {
     result = get_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, partition, row);
     CHECK_EQUAL(status_codes::OK, result.first);
 
-    //Try reading entity with invalid auth token
-    result = get_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, AuthFixture::partition, AuthFixture::row);
-    CHECK_EQUAL(status_codes::NotFound, result.first);
+    //Ensure NotFound responses (404)
+      //Try reading entity with invalid auth token
+      result = get_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, AuthFixture::partition, AuthFixture::row);
+      CHECK_EQUAL(status_codes::NotFound, result.first);
 
-    //Try reading non-existent table
-    string invalidTable {"Unknown"};
-    result = get_entity_auth(AuthFixture::addr, invalidTable, token_res.second, partition, row);
-    CHECK_EQUAL(status_codes::NotFound, result.first);
+      //Try reading non-existent table
+      string invalidTable {"Unknown"};
+      result = get_entity_auth(AuthFixture::addr, invalidTable, token_res.second, partition, row);
+      CHECK_EQUAL(status_codes::NotFound, result.first);
 
-    //Try reading non-existent partition and row
-    string invalidPartition {"Missing"};
-    string invalidRow {"No."};
-    result = get_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, invalidPartition, row);
-    CHECK_EQUAL(status_codes::NotFound, result.first);
-    result = get_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, partition, invalidRow);
-    CHECK_EQUAL(status_codes::NotFound, result.first);
+      //Try reading non-existent partition and row
+      string invalidPartition {"Missing"};
+      string invalidRow {"No."};
+      result = get_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, invalidPartition, row);
+      CHECK_EQUAL(status_codes::NotFound, result.first);
+      result = get_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, partition, invalidRow);
+      CHECK_EQUAL(status_codes::NotFound, result.first);
 
-    //Try reading entity with < 4 parameters
+    //Try reading entity with < 4 parameters; BadRequest responses (400)
     string emptyString {""};
       //Missing table
       result = get_entity_auth(AuthFixture::addr, emptyString, token_res.second, partition, row);
