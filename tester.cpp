@@ -1198,6 +1198,39 @@ SUITE(AUTH_GET_TOKENS) {
 
 }
 
+SUITE(ENTITY_AUTH) {
+  TEST_FIXTURE(AuthFixture, GetEntityAuth) {
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+      get_read_token (AuthFixture::auth_addr, AuthFixture::userid, AuthFixture::user_pwd)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL (token_res.first, status_codes::OK);
+
+    //Get entity using AuthToken
+    pair<status_code,value> result {
+      do_request (methods::GET, string(AuthFixture::addr)
+                  + read_entity_auth + "/"
+                  + AuthFixture::table + "/"
+                  + token_res.second + "/"
+                  + AuthFixture::partition + "/"
+                  + AuthFixture::row
+                  )};
+    CHECK_EQUAL(status_codes::OK, result.first);
+
+    //Check if entity returned is correct
+    value expect_value {
+      build_json_object (vector<pair<string,string>> {
+        make_pair(string(AuthFixture::property),string(AuthFixture::prop_val))
+    })};
+    compare_json_values (expect_value, result.second);
+
+    //LAST TRY READING USING UPDATE TOKEN
+  }
+  TEST_FIXTURE(AuthFixture, UpdateEntityAuth) {
+    //TO BE COMPLETED
+  }
+}
+
 //Ted's test, I think it tests the new BasicServer operations? Breaks really hard as of writing this comment
 SUITE(UPDATE_AUTH) {
   TEST_FIXTURE(AuthFixture,  PutAuth) {
