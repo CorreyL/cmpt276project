@@ -134,7 +134,7 @@ status_code update_with_token (const http_request& message,
     uri endpoint_uri {endpoint};
     storage_credentials creds {token};
     cloud_table_client client {endpoint_uri, creds};
-
+		
     table_entity::properties_type& properties = entity.properties();
     for (const auto v : props) {
       properties[v.first] = entity_property {v.second};
@@ -142,6 +142,25 @@ status_code update_with_token (const http_request& message,
 
     table_operation op {table_operation::merge_entity(entity)};
     cloud_table table_cred {client.get_table_reference(tname)};
+		// Code Added by Correy
+		azure::storage::table_query query {};
+		azure::storage::table_query_iterator end;
+		azure::storage::table_query_iterator it = table_cred.execute_query(query);
+		bool key_check1 {false};
+		bool key_check2 {false};
+		while(it != end){ // This while loop iterates through the table until it finds the requested partition
+			if( partition == it->partition_key() ){
+				key_check1 = true;
+			}
+			if( row == it->row_key() ){
+				key_check2 = true;
+			}
+			++it;
+		}
+		if(key_check1 == false || key_check2 == false){
+			return status_codes::NotFound;
+		}
+		// End Code
     table_result update_result {table_cred.execute(op)};
     status_code status {static_cast<status_code> (update_result.http_status_code())};
     if (status == status_codes::NoContent || status == status_codes::OK)

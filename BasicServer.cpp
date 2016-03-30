@@ -383,7 +383,7 @@ void handle_put(http_request message) {
   cout << endl << "**** PUT " << path << endl;
   auto paths = uri::split_path(path);
   // Need at least an operation, table name, partition, and row
-
+	cout << endl << "This entry has a Paths size of: " << paths.size() << endl << endl;
 
   if (paths.size() < 2) {
     message.reply(status_codes::BadRequest);
