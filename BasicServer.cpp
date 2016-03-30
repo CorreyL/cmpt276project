@@ -391,7 +391,7 @@ void handle_put(http_request message) {
   }
 	
 	if( paths[0] == update_entity_auth ){
-			if(paths.size() < 5){ // Less than five parameters were provided
+			if(paths.size() < 6){ // Less than six parameters were provided
 					message.reply(status_codes::BadRequest);
 					return;
 			}
