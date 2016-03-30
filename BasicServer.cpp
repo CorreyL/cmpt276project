@@ -449,7 +449,6 @@ void handle_put(http_request message) {
 	
 	if( paths[0] == update_entity_auth ){ // May need to move this body of code around if it interferes with the above or below functions.
 				status_code token;
-				
 				token = update_with_token(message, tables_endpoint, stored_message);
 				if(token == status_codes::Forbidden){
 					cout << "***Forbidden" << endl;
