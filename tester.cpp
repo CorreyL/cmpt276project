@@ -1409,7 +1409,7 @@ SUITE(ENTITY_AUTH) {
     props = make_pair("Try",value::string("Adding"));
       //Missing table
       result = do_request (methods::PUT, string(AuthFixture::addr)
-                          + read_entity_auth + "/" + token_res.second + "/" + partition + "/" + row,
+                          + update_entity_auth + "/" + token_res.second + "/" + partition + "/" + row,
                           value::object (vector<pair<string,value>> {
                             make_pair(props.first, props.second)
                           }));
@@ -1417,7 +1417,7 @@ SUITE(ENTITY_AUTH) {
 
       //Missing table + token
       result = do_request (methods::PUT, string(AuthFixture::addr)
-                          + read_entity_auth + partition + "/" + row,
+                          + update_entity_auth + "/" + partition + "/" + row,
                           value::object (vector<pair<string,value>> {
                             make_pair(props.first, props.second)
                           }));
@@ -1425,7 +1425,7 @@ SUITE(ENTITY_AUTH) {
 
       //Missing table + token + partition
       result = do_request (methods::PUT, string(AuthFixture::addr)
-                          + read_entity_auth + "/" + row,
+                          + update_entity_auth + "/" + row,
                           value::object (vector<pair<string,value>> {
                             make_pair(props.first, props.second)
                           }));
@@ -1433,7 +1433,7 @@ SUITE(ENTITY_AUTH) {
 
       //Missing all arguements
       result = do_request (methods::PUT, string(AuthFixture::addr)
-                          + read_entity_auth,
+                          + update_entity_auth,
                           value::object (vector<pair<string,value>> {
                             make_pair(props.first, props.second)
                           }));
