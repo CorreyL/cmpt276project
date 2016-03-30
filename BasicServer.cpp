@@ -390,7 +390,7 @@ void handle_put(http_request message) {
     return;
   }
 	
-	if( paths[0] == update_entity_auth ){ // May need to move this body of code around if it interferes with the above or below functions.
+	if( paths[0] == update_entity_auth ){
 			if(paths.size() < 5){ // Less than five parameters were provided
 					message.reply(status_codes::BadRequest);
 					return;
@@ -451,21 +451,22 @@ void handle_put(http_request message) {
 	
 	if( paths[0] == update_entity_auth ){ // May need to move this body of code around if it interferes with the above or below functions.
 				status_code token;
-				try{
-					token = update_with_token(message, tables_endpoint, stored_message);
-				}
-				catch (const storage_exception& e) {
-					cout << "Azure Table Storage error: " << e.what() << endl;
-					cout << e.result().extended_error().message() << endl;
-					if (e.result().http_status_code() == status_codes::Forbidden)
-						message.reply(status_codes::Forbidden);
-					else
-						message.reply(status_codes::InternalError);
+				
+				token = update_with_token(message, tables_endpoint, stored_message);
+				if(token == status_codes::Forbidden){
+					cout << "***Forbidden" << endl;
+					message.reply(status_codes::Forbidden);
 					return;
 				}
-        if(token != status_codes::OK){
-            message.reply(status_codes::NotFound);
-            return;
+				else if(token == status_codes::InternalError){
+					cout << "***Internal Error" << endl;
+					message.reply(status_codes::InternalError);
+					return;
+				}
+        else if(token == status_codes::NotFound){
+					 cout << "***Not Found" << endl;
+           message.reply(status_codes::NotFound);
+           return;
         }
         message.reply(status_codes::OK);
         return;
@@ -513,8 +514,8 @@ void handle_put(http_request message) {
       cout << "Update " << entity.partition_key() << " / " << entity.row_key() << endl;
       table_entity::properties_type& properties = entity.properties();
       for (const auto v : stored_message) {
-	properties[v.first] = entity_property {v.second};
-      }
+			properties[v.first] = entity_property {v.second};
+    }
 
       table_operation operation {table_operation::insert_or_merge_entity(entity)};
       table_result op_result {table.execute(operation)};
