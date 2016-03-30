@@ -1243,20 +1243,19 @@ SUITE(ENTITY_AUTH) {
     //Check if entity returned is correct
     value expect_value {
       build_json_object (vector<pair<string,string>> {
-        make_pair(string("test"),string("testing!")),
         make_pair(string(props.first),string(props.second))
     })};
     CHECK(result.second.is_object());
-    cout << result.second << endl;
     compare_json_values (expect_value, result.second);
 
     //Try reading entity with update token
     cout << "Requesting token" << endl;
-    token_res = get_update_token (AuthFixture::auth_addr, AuthFixture::userid, AuthFixture::user_pwd);
-    cout << "Token response " << token_res.first << endl;
-    CHECK_EQUAL (token_res.first, status_codes::OK);
+    pair<status_code,string> token_update_res {
+      get_update_token (AuthFixture::auth_addr, AuthFixture::userid, AuthFixture::user_pwd)};
+    cout << "Token response " << token_update_res.first << endl;
+    CHECK_EQUAL (token_update_res.first, status_codes::OK);
 
-    result = get_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, partition, row);
+    result = get_entity_auth(AuthFixture::addr, AuthFixture::table, token_update_res.second, partition, row);
     CHECK_EQUAL(status_codes::OK, result.first);
 
     //Ensure NotFound responses (404)
@@ -1297,34 +1296,155 @@ SUITE(ENTITY_AUTH) {
       result = do_request (methods::GET, string(AuthFixture::addr)
                           + read_entity_auth);
       CHECK_EQUAL(status_codes::BadRequest, result.first);
+
+    //Cleanup table
+    CHECK_EQUAL(status_codes::OK, delete_entity (AuthFixture::addr, AuthFixture::table, partition, row));
   }
   TEST_FIXTURE(AuthFixture, UpdateEntityAuth) {
-    // string partition {"Video_Game"};
-    // string row {"The_Witcher_3"};
+    pair<string,value> props {make_pair(string("Fun"),value::string("10/10"))};
+    string partition {"Video_Game"};
+    string row {"The_Witcher_3"};
 
-    // //Request update token
-    // cout << "Requesting token" << endl;
-    // pair<status_code,string> token_res {
-    //   get_update_token (AuthFixture::auth_addr, AuthFixture::userid, AuthFixture::user_pwd)};
-    // cout << "Token response " << token_res.first << endl;
-    // CHECK_EQUAL(token_res.first, status_codes::OK);
+    //Add properties to table
+    CHECK_EQUAL(status_codes::OK, put_multi_properties_entity(AuthFixture::addr, AuthFixture::table, partition, row,
+      value::object (vector<pair<string,value>> {
+        make_pair(props.first,props.second)
+    })));
 
-    // //Update properties in the table
-    // CHECK_EQUAL(status_codes::OK, put_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, partition, row,
-    //   value::object (vector<pair<string,value>> {
-    //     make_pair("Fun",value::string("Yes"))
-    // })));
+    //Request update token
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_res {
+      get_update_token (AuthFixture::auth_addr, AuthFixture::userid, AuthFixture::user_pwd)};
+    cout << "Token response " << token_res.first << endl;
+    CHECK_EQUAL(token_res.first, status_codes::OK);
 
-    // //Check if properties were updated
-    // pair<status_code,value> result {get_partition_entity(AuthFixture::addr, AuthFixture::table, partition, row)};
-    // CHECK_EQUAL(status_codes::OK, result.first);
-    // value expect_value {
-    //   build_json_object (vector<pair<string,string>> {
-    //     make_pair(string("test"),string("testing!")),
-    //     make_pair(string("Fun"),string("Yes"))
-    // })};
-    // CHECK(result.second.is_object());
-    // compare_json_values (expect_value, result.second);
+    //Update properties in the table
+    CHECK_EQUAL(status_codes::OK, put_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, partition, row,
+      value::object (vector<pair<string,value>> {
+        make_pair("Fun",value::string("Yes"))
+    })));
+
+    //Check if properties were updated
+    pair<status_code,value> result {get_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, partition, row)};
+    CHECK_EQUAL(status_codes::OK, result.first);
+    value expect_value {
+      build_json_object (vector<pair<string,string>> {
+        make_pair(string("Fun"),string("Yes")),
+    })};
+    CHECK(result.second.is_object());
+    compare_json_values (expect_value, result.second);
+
+    //Try adding new property
+    CHECK_EQUAL(status_codes::OK, put_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, partition, row,
+      value::object (vector<pair<string,value>> {
+        make_pair("Hello",value::string("World!"))
+    })));
+
+    result = get_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, partition, row);
+    CHECK_EQUAL(status_codes::OK, result.first);
+    expect_value = build_json_object (vector<pair<string,string>> {
+      make_pair(string("Fun"),string("Yes")),
+      make_pair(string("Hello"),string("World!"))
+    });
+    CHECK(result.second.is_object());
+    compare_json_values (expect_value, result.second);
+
+    //Try adding multiple properties
+    CHECK_EQUAL(status_codes::OK, put_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, partition, row,
+      value::object (vector<pair<string,value>> {
+        make_pair("Cool",value::string("HeckYeah")),
+        make_pair("Replay?",value::string("Always"))
+    })));
+
+    result = get_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, partition, row);
+    CHECK_EQUAL(status_codes::OK, result.first);
+    expect_value = build_json_object (vector<pair<string,string>> {
+      make_pair(string("Fun"),string("Yes")),
+      make_pair(string("Hello"),string("World!")),
+      make_pair(string("Cool"),string("HeckYeah")),
+      make_pair(string("Replay?"),string("Always"))
+    });
+    CHECK(result.second.is_object());
+    compare_json_values (expect_value, result.second);
+
+    //Trying making new entity
+    partition = "ShouldNot";
+    row = "Work!";
+    CHECK_EQUAL(status_codes::NotFound, put_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, partition, row,
+      value::object (vector<pair<string,value>> {
+        make_pair("Blah",value::string("Haha")),
+        make_pair("Beep",value::string("Boop"))
+    })));
+
+    //Ensure NotFound responses (404)
+    partition = "Video_Game";
+    row = "The_Witcher_3";
+      //Try updating entity with invalid auth token
+      result = get_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, AuthFixture::partition, AuthFixture::row);
+      CHECK_EQUAL(status_codes::NotFound, result.first);
+
+      //Try updating non-existent table
+      string invalidTable {"NoTable"};
+      result = get_entity_auth(AuthFixture::addr, invalidTable, token_res.second, partition, row);
+      CHECK_EQUAL(status_codes::NotFound, result.first);
+
+      //Try updating non-existent partition and row
+      string invalidPartition {"DoesNot"};
+      string invalidRow {"Exist"};
+      result = get_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, invalidPartition, row);
+      CHECK_EQUAL(status_codes::NotFound, result.first);
+      result = get_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, partition, invalidRow);
+      CHECK_EQUAL(status_codes::NotFound, result.first);
+
+    //Try updating entity with < 4 parameters
+    props = make_pair("Try",value::string("Adding"));
+      //Missing table
+      result = do_request (methods::PUT, string(AuthFixture::addr)
+                          + read_entity_auth + "/" + token_res.second + "/" + partition + "/" + row,
+                          value::object (vector<pair<string,value>> {
+                            make_pair(props.first, props.second)
+                          }));
+      CHECK_EQUAL(status_codes::BadRequest, result.first);
+
+      //Missing table + token
+      result = do_request (methods::PUT, string(AuthFixture::addr)
+                          + read_entity_auth + partition + "/" + row,
+                          value::object (vector<pair<string,value>> {
+                            make_pair(props.first, props.second)
+                          }));
+      CHECK_EQUAL(status_codes::BadRequest, result.first);
+
+      //Missing table + token + partition
+      result = do_request (methods::PUT, string(AuthFixture::addr)
+                          + read_entity_auth + "/" + row,
+                          value::object (vector<pair<string,value>> {
+                            make_pair(props.first, props.second)
+                          }));
+      CHECK_EQUAL(status_codes::BadRequest, result.first);
+
+      //Missing all arguements
+      result = do_request (methods::PUT, string(AuthFixture::addr)
+                          + read_entity_auth,
+                          value::object (vector<pair<string,value>> {
+                            make_pair(props.first, props.second)
+                          }));
+      CHECK_EQUAL(status_codes::BadRequest, result.first);
+
+
+    //Try updating table with read token
+    cout << "Requesting token" << endl;
+    pair<status_code,string> token_read_res {
+      get_read_token (AuthFixture::auth_addr, AuthFixture::userid, AuthFixture::user_pwd)};
+    cout << "Token response " << token_read_res.first << endl;
+    CHECK_EQUAL(token_read_res.first, status_codes::OK);
+
+    CHECK_EQUAL(status_codes::Forbidden, put_entity_auth(AuthFixture::addr, AuthFixture::table, token_read_res.second, partition, row,
+      value::object (vector<pair<string,value>> {
+        make_pair("Fun",value::string("No"))
+    })));
+
+    //Cleanup table
+    CHECK_EQUAL(status_codes::OK, delete_entity (AuthFixture::addr, AuthFixture::table, partition, row));
   }
 }
 
