@@ -1379,22 +1379,31 @@ SUITE(ENTITY_AUTH) {
     //Ensure NotFound responses (404)
     partition = "Video_Game";
     row = "The_Witcher_3";
+    props = make_pair(string("Happy"),value::string("Sad"));
       //Try updating entity with invalid auth token
-      result = get_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, AuthFixture::partition, AuthFixture::row);
-      CHECK_EQUAL(status_codes::NotFound, result.first);
+      CHECK_EQUAL(status_codes::NotFound, put_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, AuthFixture::partition, AuthFixture::row,
+        value::object (vector<pair<string,value>> {
+          make_pair(props.first, props.second)
+      })));
 
       //Try updating non-existent table
       string invalidTable {"NoTable"};
-      result = get_entity_auth(AuthFixture::addr, invalidTable, token_res.second, partition, row);
-      CHECK_EQUAL(status_codes::NotFound, result.first);
+      CHECK_EQUAL(status_codes::NotFound, put_entity_auth(AuthFixture::addr, invalidTable, token_res.second, partition, row,
+        value::object (vector<pair<string,value>> {
+          make_pair(props.first, props.second)
+      })));
 
       //Try updating non-existent partition and row
       string invalidPartition {"DoesNot"};
       string invalidRow {"Exist"};
-      result = get_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, invalidPartition, row);
-      CHECK_EQUAL(status_codes::NotFound, result.first);
-      result = get_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, partition, invalidRow);
-      CHECK_EQUAL(status_codes::NotFound, result.first);
+      CHECK_EQUAL(status_codes::NotFound, put_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, invalidPartition, row,
+        value::object (vector<pair<string,value>> {
+          make_pair(props.first, props.second)
+      })));
+      CHECK_EQUAL(status_codes::NotFound, put_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, partition, invalidRow,
+        value::object (vector<pair<string,value>> {
+          make_pair(props.first, props.second)
+      })));
 
     //Try updating entity with < 4 parameters
     props = make_pair("Try",value::string("Adding"));
