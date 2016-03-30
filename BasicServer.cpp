@@ -383,15 +383,13 @@ void handle_put(http_request message) {
   cout << endl << "**** PUT " << path << endl;
   auto paths = uri::split_path(path);
   // Need at least an operation, table name, partition, and row
-	cout << endl << "This entry has a Paths size of: " << paths.size() << endl << endl;
-
   if (paths.size() < 2) {
     message.reply(status_codes::BadRequest);
     return;
   }
 	
 	if( paths[0] == update_entity_auth ){
-			if(paths.size() < 6){ // Less than six parameters were provided
+			if(paths.size() < 5){ // Less than six parameters were provided
 					message.reply(status_codes::BadRequest);
 					return;
 			}
