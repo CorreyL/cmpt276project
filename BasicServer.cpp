@@ -182,7 +182,7 @@ void handle_get(http_request message) {
     message.reply(status_codes::BadRequest);
     return;
   }
-
+	
   if(paths[0] == read_entity_auth){
   	if(paths.size() < 5){
   		message.reply( status_codes::BadRequest);
@@ -389,7 +389,13 @@ void handle_put(http_request message) {
     message.reply(status_codes::BadRequest);
     return;
   }
- 
+	
+	if( paths[0] == update_entity_auth ){ // May need to move this body of code around if it interferes with the above or below functions.
+			if(paths.size() < 5){ // Less than five parameters were provided
+					message.reply(status_codes::BadRequest);
+					return;
+			}
+	}
 
   cloud_table table {table_cache.lookup_table(paths[1])};
   if ( ! table.exists()) {
@@ -444,10 +450,6 @@ void handle_put(http_request message) {
 	}
 	
 	if( paths[0] == update_entity_auth ){ // May need to move this body of code around if it interferes with the above or below functions.
-        if(paths.size() < 4){ // Less than four parameters were provided
-            message.reply(status_codes::BadRequest);
-            return;
-        }
 				status_code token;
 				try{
 					token = update_with_token(message, tables_endpoint, stored_message);
@@ -459,6 +461,7 @@ void handle_put(http_request message) {
 						message.reply(status_codes::Forbidden);
 					else
 						message.reply(status_codes::InternalError);
+					return;
 				}
         if(token != status_codes::OK){
             message.reply(status_codes::NotFound);
@@ -496,6 +499,7 @@ void handle_put(http_request message) {
 		message.reply(status_codes::OK);
 		return;
 	}
+	
 	
 	/******************** 
 	**CODE ADDED - STOP**
