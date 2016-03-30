@@ -451,17 +451,17 @@ void handle_put(http_request message) {
 				status_code token;
 				token = update_with_token(message, tables_endpoint, stored_message);
 				if(token == status_codes::Forbidden){
-					cout << "***Forbidden" << endl;
+					// cout << "***Forbidden" << endl;
 					message.reply(status_codes::Forbidden);
 					return;
 				}
 				else if(token == status_codes::InternalError){
-					cout << "***Internal Error" << endl;
+					// cout << "***Internal Error" << endl;
 					message.reply(status_codes::InternalError);
 					return;
 				}
         else if(token == status_codes::NotFound){
-					 cout << "***Not Found" << endl;
+					 // cout << "***Not Found" << endl;
            message.reply(status_codes::NotFound);
            return;
         }
