@@ -318,8 +318,8 @@ void handle_get(http_request message) {
 		********************/
 	}
 
-  // GET specific entry: Partition == paths[2], Row == paths[3]
-  if (paths.size() != 3) {
+  // GET specific entry: Partition == paths[3], Row == paths[4]
+  if (paths.size() != 4) {
     message.reply (status_codes::BadRequest);
     return;
   }
