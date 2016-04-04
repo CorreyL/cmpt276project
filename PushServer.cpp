@@ -55,13 +55,15 @@ using prop_str_vals_t = vector<pair<string,string>>;
 
 constexpr const char* def_url = "http://localhost:34574";
 
+// TableCache table_cache {};
+
 int main (int argc, char const * argv[]) {
   cout << "PushServer: Parsing connection string" << endl;
-  table_cache.init (storage_connection_string);
+  // table_cache.init (storage_connection_string);
 
   cout << "PushServer: Opening listener" << endl;
   http_listener listener {def_url};
-  listener.support(methods::GET, &handle_get);
+  //listener.support(methods::GET, &handle_get);
   //listener.support(methods::POST, &handle_post);
   //listener.support(methods::PUT, &handle_put);
   //listener.support(methods::DEL, &handle_delete);
