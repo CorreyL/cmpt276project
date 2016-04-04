@@ -57,8 +57,21 @@ static constexpr const char* basic_addr {"http://localhost:34568/"};
 
 const string read_entity_auth {"ReadEntityAuth"};
 const string get_update_token_op {"GetUpdateToken"};
+const string update_entity_auth {"UpdateEntityAuth"};
 const string sign_on {"SignOn"};
+const string sign_off {"SignOff"};
+const string add_friend {"AddFriend"};
+const string unfriend {"UnFriend"};
 
+class active_user{
+	public:
+		bool active {false};
+		string token {};
+		string partition {};
+		string row {};
+};
+
+active_user active_user;
 /*
   Return true if an HTTP request has a JSON body
 
@@ -151,13 +164,68 @@ pair<status_code,value> get_entity_auth (const string& addr, const string& table
   return result;
 }
 
+int put_entity_auth (const string& addr, const string& table, const string& tok, const string& partition, const string& row, const value& props){
+  pair<status_code,value> result {
+    do_request(methods::PUT,
+      addr + update_entity_auth + "/" + table + "/" + tok + "/" + partition + "/" + row, props)};
+  return result.first;
+}
+
+void handle_put(http_request message){
+	string path {uri::decode(message.relative_uri().path())};
+  cout << endl << "**** PUT " << path << endl;
+  auto paths = uri::split_path(path);
+	
+	if(paths[0]==add_friend){
+		if(!active_user.active){
+			message.reply(status_codes::Forbidden);
+			return;
+		}
+		
+		if(paths.size() < 3){ // We require a UserID, Friend Country and Full Friend Name
+			message.reply(status_codes::BadRequest);
+			return;
+		}
+		pair<status_code,value> check_friends {get_entity_auth(basic_addr, "DataTable", active_user.token, active_user.partition, active_user.row)};
+		string new_friend;
+		if(check_friends.second.size() == 0){ // User has no friends
+			new_friend = paths[2] + ";" + paths[3];
+		}
+		else{
+			string current_friends;
+			for (const auto& v : check_friends.second.as_object()){
+				current_friends = v.second.as_string();
+			}
+			new_friend = current_friends + "|" + paths[2] + ";" + paths[3];
+		}
+		
+		value props { build_json_object(vector<pair<string,string>> { make_pair(string("Friends"),string(new_friend))})};
+		int add_friend_result = put_entity_auth(basic_addr, "DataTable", active_user.token, active_user.partition, active_user.row, props);
+		if(add_friend_result == status_codes::OK){
+			message.reply(status_codes::OK);
+			return;
+		}
+		else{
+			message.reply(add_friend_result);
+			return;
+		}
+	}
+	
+	if(paths[0]==unfriend){
+		if(!active_user.active){
+			message.reply(status_codes::Forbidden);
+			return;
+		}
+		
+	}
+}
+
 void handle_post(http_request message) {
   string path {uri::decode(message.relative_uri().path())};
   cout << endl << "**** POST " << path << endl;
   auto paths = uri::split_path(path);
 			
 	if(paths[0] == sign_on){
-		
 		if(paths.size() < 2){ // UserID not passed in
 			message.reply(status_codes::BadRequest);
 			return;
@@ -176,11 +244,15 @@ void handle_post(http_request message) {
 		if(auth_result.first == status_codes::OK){
 			const string DataTable = "DataTable";
 			// Begin parsing the partition and row from the token
-			const string row = auth_result.second.substr(auth_result.second.find("&erk=")+5, auth_result.second.length());1
+			const string row = auth_result.second.substr(auth_result.second.find("&erk=")+5, auth_result.second.length());
 			string partition = auth_result.second.substr(auth_result.second.find("&epk=")+5, auth_result.second.find("&erk="));
 			partition.erase(partition.length()-(row.length()+5), partition.length());
 			pair<status_code,value> data_result {get_entity_auth(basic_addr, DataTable, auth_result.second, partition, row)};
 			if(data_result.first == status_codes::OK){
+				active_user.active = true;
+				active_user.token = auth_result.second;
+				active_user.partition = partition;
+				active_user.row = row;
 				message.reply(status_codes::OK);
 				return;
 			}
@@ -195,14 +267,23 @@ void handle_post(http_request message) {
 		}
 		
 	}
-	/*
-  // Need at least an operation and a table name
-  if (paths.size() < 2) {
-    message.reply(status_codes::BadRequest);
-    return;
-  }
-	*/
 	
+	if(paths[0] == sign_off){
+		if(paths.size() < 2){ // UserID not passed in
+			message.reply(status_codes::BadRequest);
+			return;
+		}
+		if(active_user.active){
+			active_user.active = false;
+			message.reply(status_codes::OK);
+			return;
+		}
+		else{
+			message.reply(status_codes::NotFound);
+			return;
+		}
+		
+	}
 }
 
 int main (int argc, char const * argv[]) {
@@ -215,7 +296,7 @@ int main (int argc, char const * argv[]) {
   cout << "Opening listener" << endl;
   //listener.support(methods::GET, &handle_get);
   listener.support(methods::POST, &handle_post);
-  //listener.support(methods::PUT, &handle_put);
+  listener.support(methods::PUT, &handle_put);
   //listener.support(methods::DEL, &handle_delete);
   listener.open().wait(); // Wait for listener to complete starting
 
