@@ -62,6 +62,7 @@ const string sign_on {"SignOn"};
 const string sign_off {"SignOff"};
 const string add_friend {"AddFriend"};
 const string unfriend {"UnFriend"};
+const string update_status {"UpdateStatus"};
 
 class active_user{
 	public:
@@ -71,7 +72,7 @@ class active_user{
 		string row {};
 };
 
-active_user active_user;
+active_user active_user; // Does it need to be rebuilt so that multiple users can be on at once?
 /*
   Return true if an HTTP request has a JSON body
 
@@ -217,7 +218,7 @@ void handle_put(http_request message){
 	// paths[0] == UnFriend | paths[1] == <UserID> | paths[2] == <Country> | paths[3] == <Last Name, First Name>
 	// "USA;Shinoda,Mike|Canada;Edwards,Kathleen|Korea;Bae,Doona"
 	if(paths[0]==unfriend){
-		if(!active_user.active){
+		if(!active_user.active){ // User is not signed in
 			message.reply(status_codes::Forbidden);
 			return;
 		}
@@ -225,7 +226,11 @@ void handle_put(http_request message){
 		pair<status_code,value> check_friends {get_entity_auth(basic_addr, "DataTable", active_user.token, active_user.partition, active_user.row)};
 		
 		string current_friends;
-		if(check_friends.second.size() == 0){ // User has no friends
+		string check_for_no_friends;
+		for (const auto& v : check_friends.second.as_object()){
+			check_for_no_friends = v.second.as_string();
+		}
+		if( (check_friends.second.size() == 0) || (check_for_no_friends == "") ){ // User has no friends
 			message.reply(status_codes::OK);
 			return;
 		}
@@ -236,7 +241,7 @@ void handle_put(http_request message){
 		}
 		if(current_friends.find("|") == string::npos){ // This user only has one friend
 			string passed_in {paths[2] + ";" + paths[3]};
-			cout << "Passed In Friend Is: " << passed_in << endl;
+			// cout << "Passed In Friend Is: " << passed_in << endl;
 			current_friends.erase( current_friends.find(passed_in), passed_in.length() );
 		}
 		else{
@@ -255,6 +260,24 @@ void handle_put(http_request message){
 			message.reply(unfriend_result);
 			return;
 		}
+	}
+	// paths[0] == UpdateStatus | paths[1] == <UserID> | paths[2] == <User Status>
+	if(paths[0]==update_status){
+		if(!active_user.active){ // User is not signed in
+			message.reply(status_codes::Forbidden);
+			return;
+		}
+		
+		value props { build_json_object(vector<pair<string,string>> { make_pair(string("Status"),string(paths[2]))}) };
+		
+		pair<status_code,value> check_status {get_entity_auth(basic_addr, "DataTable", active_user.token, active_user.partition, active_user.row)};
+		
+		int status_change_result = put_entity_auth(basic_addr, "DataTable", active_user.token, active_user.partition, active_user.row, props);
+		
+		// Operations for the Push Server goes here; update all friends of your status
+		
+		message.reply(status_codes::OK);
+		return;
 	}
 }
 
