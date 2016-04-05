@@ -674,7 +674,7 @@ SUITE(GET) {
     //Update all entities to have the same one as the first
     pair<status_code,value> result = {
     do_request (methods::PUT,
-    string(BasicFixture::addr) + "AddPropertyAdmin/" + string(BasicFixture::table), value::object (vector<pair<string,value>>
+    string(BasicFixture::addr) + add_property_admin + string(BasicFixture::table), value::object (vector<pair<string,value>>
              {make_pair(property, value::string(prop_val))}))};
 
     //Check that all entities now have the added property (It's 5 because Franklin Aretha got infected too, poor guy)
@@ -692,13 +692,13 @@ SUITE(GET) {
     //Invalid because no JSON body
     result = {
     do_request (methods::PUT,
-    string(BasicFixture::addr) + "AddPropertyAdmin/" + string(BasicFixture::table))};
+    string(BasicFixture::addr) + add_property_admin + string(BasicFixture::table))};
     CHECK_EQUAL(status_codes::BadRequest, result.first);
 
     //Ensure if the table does not exist a 404 code is recieved
     result = {
     do_request (methods::PUT,
-    string(BasicFixture::addr) + "AddPropertyAdmin/" + "WrongTable",
+    string(BasicFixture::addr) + add_property_admin + "WrongTable",
     value::object (vector<pair<string,value>>{make_pair(property, value::string(prop_val))}))};
     CHECK_EQUAL(status_codes::NotFound, result.first);
 

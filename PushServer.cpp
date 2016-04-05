@@ -54,10 +54,18 @@ using prop_vals_t = vector<pair<string,value>>;
 using prop_str_vals_t = vector<pair<string,string>>;
 
 const string push_status {"PushStatus"};
+const string update_entity_admin {"UpdateEntityAdmin"};
+const string read_entity_admin {"ReadEntityAdmin"};
 
 constexpr const char* def_url = "http://localhost:34574";
 
+static constexpr const char* auth_addr {"http://localhost:34570/"};
+static constexpr const char* basic_addr {"http://localhost:34568/"};
+static constexpr const char* push_addr {"http://localhost:34574/"};
+
 // TableCache table_cache {};
+
+string DataTable {"DataTable"};
 
 unordered_map<string,string> get_json_body(http_request message) {  
   unordered_map<string,string> results {};
@@ -89,6 +97,20 @@ unordered_map<string,string> get_json_body(http_request message) {
   return results;
 }
 
+int put_entity(const string& partition, const string& row, const string& prop, const string& pstring) {
+  pair<status_code,value> result {
+    do_request (methods::PUT,
+                basic_addr + update_entity_admin + "/" + DataTable + "/" + partition + "/" + row,
+                value::object (vector<pair<string,value>>
+                               {make_pair(prop, value::string(pstring))}))};
+  return result.first;
+}
+
+pair<status_code,value> get_partition_entity (const string& addr, const string& table, const string& partition, const string& row){
+	pair<status_code,value> result {do_request(methods::GET, addr + read_entity_admin + "/" + table + "/" + partition + "/" + row) };
+	return result;
+}
+
 void handle_post(http_request message) {
   string path {uri::decode(message.relative_uri().path())};
   cout << endl << "**** POST " << path << endl;
@@ -103,16 +125,39 @@ void handle_post(http_request message) {
 		else{
 			unordered_map<string,string>::const_iterator got = stored_message.find("Friends");
 			string all_friends {got->second};
+			// cout << "Getting all friends; it is: " << all_friends << endl;
 			string current_friend { all_friends.substr( 0, all_friends.find("|") ) };
 			string current_country {};
 			string current_name {};
-			while( current_friend != "" ){
+			string current_properties {};
+			string prop {"Updates"};
+			bool done {false};
+			while( !done ){
 				current_country = current_friend.substr( 0, current_friend.find(";") );
-				current_name = current_friend.substr( current_friend.find(";"), current_friend.length() );
+				current_name = current_friend.substr( current_friend.find(";")+1, current_friend.length() );
 				
-				all_friends.erase( 0, all_friends.find("|") );
+				pair<status_code,value> get_result { get_partition_entity(basic_addr, DataTable, current_country, current_name) };
+				unordered_map<string,string> extract_json {};
+				for ( const auto& v : get_result.second.as_object() ){
+					extract_json[v.first] = v.second.as_string();
+				}
+				unordered_map<string,string>::const_iterator got = extract_json.find("Updates");
+				current_properties = got->second;
+				int update_result = put_entity(current_country, current_name, prop, current_properties+paths[2]+":"+paths[3]+"\n" );
+				/*
+				cout << "Current Friend is: " << current_friend << endl;
+				cout << "Current Country is: " << current_country << endl;
+				cout << "Current Name is: " << current_name << endl;
+				*/
+				if( all_friends.find("|") == string::npos ){ // The last friend has been updated
+					done = true;
+				}
+				all_friends.erase( 0, all_friends.find("|")+1 );
+				// cout << "All Friends is now: " << all_friends << endl;
 				current_friend = all_friends.substr(0, all_friends.find("|"));
 			}
+			message.reply(status_codes::OK);
+			return;
 		}
 		
 	}

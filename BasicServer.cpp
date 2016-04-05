@@ -69,7 +69,7 @@ constexpr const char* def_url = "http://localhost:34568";
 
 const string create_table {"CreateTableAdmin"};
 const string delete_table {"DeleteTableAdmin"};
-const string update_entity {"UpdateEntityAdmin"};
+const string update_entity_admin {"UpdateEntityAdmin"};
 const string delete_entity {"DeleteEntityAdmin"};
 const string read_entity_admin {"ReadEntityAdmin"};
 const string read_entity_auth {"ReadEntityAuth"};
@@ -507,12 +507,12 @@ void handle_put(http_request message) {
 
   // Update entity
   try {
-    if (paths[0] == update_entity) {
+    if (paths[0] == update_entity_admin) {
       cout << "Update " << entity.partition_key() << " / " << entity.row_key() << endl;
       table_entity::properties_type& properties = entity.properties();
       for (const auto v : stored_message) {
-			properties[v.first] = entity_property {v.second};
-    }
+				properties[v.first] = entity_property {v.second};
+			}
 
       table_operation operation {table_operation::insert_or_merge_entity(entity)};
       table_result op_result {table.execute(operation)};
