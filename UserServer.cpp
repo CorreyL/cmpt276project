@@ -66,7 +66,7 @@ const string unfriend {"UnFriend"};
 const string update_status {"UpdateStatus"};
 const string read_friend_list {"ReadFriendList"};
 const string push_status {"PushStatus"};
-
+/*
 class active_user{
 	public:
 		bool active {false};
@@ -76,6 +76,14 @@ class active_user{
 };
 
 active_user active_user; // Does it need to be rebuilt so that multiple users can be on at once?
+*/
+
+// To ensure multiple users can be logged on at once, the UserID will be the key, and the vector will hold the following information in this order:
+// vector<string>[0] = (token)
+// vector<string>[1] = (partition) (Country)
+// vector<string>[2] = (row) (Full Name)
+unordered_map< string, vector<string> > active_users = {};
+
 /*
   Return true if an HTTP request has a JSON body
 
@@ -187,16 +195,16 @@ void handle_put(http_request message){
 	const string DataTable {"DataTable"};
 	// paths[0] == AddFriend | paths[1] == <UserID> | paths[2] == <Friend's Country> | paths[3] == <<Friend's Last Name>,<Friend's First Name>>
 	if(paths[0]==add_friend){
-		if(!active_user.active){
+		if( active_users.find(paths[1]) == active_users.end() ){
 			message.reply(status_codes::Forbidden);
 			return;
 		}
-		
+
 		if(paths.size() < 3){ // We require a UserID, Friend Country and Full Friend Name
 			message.reply(status_codes::BadRequest);
 			return;
 		}
-		pair<status_code,value> check_friends {get_entity_auth(basic_addr, DataTable, active_user.token, active_user.partition, active_user.row)};
+		pair<status_code,value> check_friends {get_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2])};
 		string new_friend;
 		string check_for_no_friends;
 		for (const auto& v : check_friends.second.as_object()){
@@ -214,7 +222,7 @@ void handle_put(http_request message){
 		}
 		
 		value props { build_json_object(vector<pair<string,string>> { make_pair(string("Friends"),string(new_friend))})};
-		int add_friend_result = put_entity_auth(basic_addr, DataTable, active_user.token, active_user.partition, active_user.row, props);
+		int add_friend_result = put_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2], props);
 		if(add_friend_result == status_codes::OK){
 			message.reply(status_codes::OK);
 			return;
@@ -227,15 +235,16 @@ void handle_put(http_request message){
 	// paths[0] == UnFriend | paths[1] == <UserID> | paths[2] == <Country> | paths[3] == <Last Name, First Name>
 	// "USA;Shinoda,Mike|Canada;Edwards,Kathleen|Korea;Bae,Doona"
 	if(paths[0]==unfriend){
-		if(!active_user.active){ // User is not signed in
+		if( active_users.find(paths[1]) == active_users.end() ){
 			message.reply(status_codes::Forbidden);
 			return;
 		}
 		
-		pair<status_code,value> check_friends {get_entity_auth(basic_addr, DataTable, active_user.token, active_user.partition, active_user.row)};
+		pair<status_code,value> check_friends {get_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2])};
 		
 		string current_friends;
 		string check_for_no_friends;
+		string passed_in {paths[2] + ";" + paths[3]};
 		for (const auto& v : check_friends.second.as_object()){
 			check_for_no_friends = v.second.as_string();
 		}
@@ -248,18 +257,25 @@ void handle_put(http_request message){
 				current_friends = v.second.as_string();
 			}
 		}
+		cout << "Current_friends before: " << current_friends << endl;
 		if(current_friends.find("|") == string::npos){ // This user only has one friend
-			string passed_in {paths[2] + ";" + paths[3]};
-			// cout << "Passed In Friend Is: " << passed_in << endl;
+			// string passed_in {paths[2] + ";" + paths[3]};
+			cout << "Passed In Friend Is: " << passed_in << endl;
 			current_friends.erase( current_friends.find(passed_in), passed_in.length() );
+			cout << "Current_friends is now: " << current_friends << endl;
 		}
-		else{
-			string passed_in {paths[2] + ";" + paths[3] + "|"};
-			current_friends.erase( current_friends.find(passed_in), passed_in.length() );
+		else if( current_friends.find(passed_in+"|") != string::npos ){ // This friend is the first entry in the friends list
+			current_friends.erase( current_friends.find(passed_in), passed_in.length()+1 );
 		}
-		
+		else if( current_friends.find("|"+passed_in+"|") != string::npos ){ // This friend is a middle entry in the friends list
+			current_friends.erase( current_friends.find(passed_in), passed_in.length()+1 );
+		}
+		else{ // This friend is the last entry in the friends list
+			current_friends.erase( current_friends.find(passed_in)-1, passed_in.length()+1 );
+		}
+		cout << "Current_friends is now: " << current_friends << endl;
 		value props { build_json_object(vector<pair<string,string>> { make_pair(string("Friends"),string(current_friends))})};
-		int unfriend_result = put_entity_auth(basic_addr, DataTable, active_user.token, active_user.partition, active_user.row, props);
+		int unfriend_result = put_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2], props);
 		
 		if(unfriend_result == status_codes::OK){
 			message.reply(status_codes::OK);
@@ -273,29 +289,30 @@ void handle_put(http_request message){
 	
 	// paths[0] == UpdateStatus | paths[1] == <UserID> | paths[2] == <User Status>
 	if(paths[0]==update_status){
-		if(!active_user.active){ // User is not signed in
+		if( active_users.find(paths[1]) == active_users.end() ){
 			message.reply(status_codes::Forbidden);
 			return;
 		}
 		
 		value props { build_json_object(vector<pair<string,string>> { make_pair(string("Status"),string(paths[2]))}) };
 		
-		pair<status_code,value> check_status {get_entity_auth(basic_addr, DataTable, active_user.token, active_user.partition, active_user.row)};
+		pair<status_code,value> check_status {get_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2])};
 		
-		int status_change_result = put_entity_auth(basic_addr, DataTable, active_user.token, active_user.partition, active_user.row, props);
+		int status_change_result = put_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2], props);
 		
-		pair<status_code,value> result { push_user_status(active_user.partition, active_user.row, paths[2], props) };
+		pair<status_code,value> result { push_user_status(active_users[paths[1]][1], active_users[paths[1]][2], paths[2], props) };
 		
 		message.reply(status_codes::OK);
 		return;
 	}
 	// paths[0] == ReadFriendList | paths[1] == <UserID>
 	if(paths[0]==read_friend_list){
-		if(!active_user.active){ // User is not signed in
+		if( active_users.find(paths[1]) == active_users.end() ){
 			message.reply(status_codes::Forbidden);
 			return;
 		}
-		pair<status_code,value> read_result {get_entity_auth(basic_addr, DataTable, active_user.token, active_user.partition, active_user.row)};
+		
+		pair<status_code,value> read_result {get_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2])};
 		if( read_result.first == status_codes::OK ){
 			message.reply(status_codes::OK, read_result.second ); // Needs to be tested for whether or not the JSON property is being passed back properly
 			return;
@@ -336,10 +353,12 @@ void handle_post(http_request message) {
 			partition.erase(partition.length()-(row.length()+5), partition.length());
 			pair<status_code,value> data_result {get_entity_auth(basic_addr, DataTable, auth_result.second, partition, row)};
 			if(data_result.first == status_codes::OK){
-				active_user.active = true;
-				active_user.token = auth_result.second;
-				active_user.partition = partition;
-				active_user.row = row;
+				active_users.insert( { paths[1], {auth_result.second, partition, row} } );
+				/*
+				active_users[paths[1]][0] = 
+				active_users[paths[1]][1] = ;
+				active_users[paths[1]][2] = row;
+				*/
 				message.reply(status_codes::OK);
 				return;
 			}
@@ -360,8 +379,8 @@ void handle_post(http_request message) {
 			message.reply(status_codes::BadRequest);
 			return;
 		}
-		if(active_user.active){
-			active_user.active = false;
+		if( active_users.find(paths[1]) != active_users.end() ){
+			active_users.erase(paths[1]);
 			message.reply(status_codes::OK);
 			return;
 		}
@@ -369,11 +388,10 @@ void handle_post(http_request message) {
 			message.reply(status_codes::NotFound);
 			return;
 		}
-		
-		// If the code reaches here, then a Malformed Request was done (eg. paths[0] == "DoSomething")
-		message.reply(status_codes::BadRequest);
-		return;
 	}
+	// If the code reaches here, then a Malformed Request was done (eg. paths[0] == "DoSomething")
+	message.reply(status_codes::BadRequest);
+	return;
 }
 
 int main (int argc, char const * argv[]) {
