@@ -118,7 +118,6 @@ void handle_post(http_request message) {
 	
 	if( paths[0] == push_status ){
 		unordered_map<string,string> stored_message = get_json_body(message);
-		
 		if(stored_message.size() == 0){ // The user has no friends
 			message.reply(status_codes::OK);
 			return;
@@ -126,13 +125,19 @@ void handle_post(http_request message) {
 		else{
 			unordered_map<string,string>::const_iterator got = stored_message.find("Friends");
 			string all_friends {got->second};
-			// cout << "Getting all friends; it is: " << all_friends << endl;
-			string current_friend { all_friends.substr( 0, all_friends.find("|") ) }; // Parsing out the first friend from the string of all the friends this user has
+			string current_friend {}; // Parsing out the first friend from the string of all the friends this user has
+			if(all_friends.find("|") == string::npos){
+				current_friend = all_friends;
+			}
+			else{
+				current_friend = all_friends.substr( 0, all_friends.find("|") );
+			}
 			string current_country {};
 			string current_name {};
 			string current_properties {};
 			string prop {"Updates"};
 			bool done {false};
+			
 			while( !done ){
 				current_country = current_friend.substr( 0, current_friend.find(";") ); // Parse out the country from current_friend
 				current_name = current_friend.substr( current_friend.find(";")+1, current_friend.length() ); // Parse out the name from current_friend

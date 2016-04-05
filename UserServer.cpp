@@ -294,11 +294,33 @@ void handle_put(http_request message){
 			return;
 		}
 		
-		value props { build_json_object(vector<pair<string,string>> { make_pair(string("Status"),string(paths[2]))}) };
+		pair<status_code,value> check_friends {get_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2])};
 		
-		pair<status_code,value> check_status {get_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2])};
+		string current_friends;
+		string check_for_no_friends;
+		for (const auto& v : check_friends.second.as_object()){
+			if(v.first == "Friends") check_for_no_friends = v.second.as_string();
+		}
+		if( (check_friends.second.size() == 0) || (check_for_no_friends == "") ){ // User has no friends
+			message.reply(status_codes::OK);
+			return;
+		}
+		else{
+			for (const auto& v : check_friends.second.as_object()){
+				if(v.first=="Friends") current_friends = v.second.as_string();
+			}
+		}
+		cout << "Current friends is: " << current_friends << endl;
 		
-		int status_change_result = put_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2], props);
+		value status_prop { build_json_object(vector<pair<string,string>> { make_pair(string("Status"),string(paths[2])) } ) };
+		
+		int status_change_result = put_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2], status_prop);
+		
+		pair<status_code,value> check_status {get_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2])}; // Why is this here?
+		
+		value props { build_json_object(vector<pair<string,string>> { make_pair(string("Status"),string(paths[2])), make_pair(string("Friends"),string(current_friends) ) } ) };
+		
+		//int status_change_result = put_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2], props);
 		
 		pair<status_code,value> result { push_user_status(active_users[paths[1]][1], active_users[paths[1]][2], paths[2], props) };
 		
