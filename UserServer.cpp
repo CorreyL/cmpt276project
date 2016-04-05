@@ -283,7 +283,7 @@ void handle_put(http_request message){
 		
 		int status_change_result = put_entity_auth(basic_addr, DataTable, active_user.token, active_user.partition, active_user.row, props);
 		
-		// Operations for the Push Server goes here; update all friends of your status
+		pair<status_code,value> result { push_user_status(active_user.partition, active_user.row, paths[2], props) };
 		
 		message.reply(status_codes::OK);
 		return;
