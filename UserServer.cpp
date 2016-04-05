@@ -54,6 +54,7 @@ constexpr const char* def_url = "http://localhost:34572";
 
 static constexpr const char* auth_addr {"http://localhost:34570/"};
 static constexpr const char* basic_addr {"http://localhost:34568/"};
+static constexpr const char* push_addr {"http://localhost:34574/"};
 
 const string read_entity_auth {"ReadEntityAuth"};
 const string get_update_token_op {"GetUpdateToken"};
@@ -63,6 +64,8 @@ const string sign_off {"SignOff"};
 const string add_friend {"AddFriend"};
 const string unfriend {"UnFriend"};
 const string update_status {"UpdateStatus"};
+const string read_friend_list {"ReadFriendList"};
+const string push_status {"PushStatus"};
 
 class active_user{
 	public:
@@ -172,11 +175,16 @@ int put_entity_auth (const string& addr, const string& table, const string& tok,
   return result.first;
 }
 
+pair<status_code,value> push_user_status(const string& partition, const string& row, const string& status, const value& props){
+	pair<status_code,value> result { do_request( methods::POST, push_addr + push_status + "/" + partition + "/" + row + "/" + status, props ) };
+	return result;
+}
+
 void handle_put(http_request message){
 	string path {uri::decode(message.relative_uri().path())};
   cout << endl << "**** PUT " << path << endl;
   auto paths = uri::split_path(path);
-	
+	const string DataTable {"DataTable"};
 	if(paths[0]==add_friend){
 		if(!active_user.active){
 			message.reply(status_codes::Forbidden);
@@ -205,7 +213,7 @@ void handle_put(http_request message){
 		}
 		
 		value props { build_json_object(vector<pair<string,string>> { make_pair(string("Friends"),string(new_friend))})};
-		int add_friend_result = put_entity_auth(basic_addr, "DataTable", active_user.token, active_user.partition, active_user.row, props);
+		int add_friend_result = put_entity_auth(basic_addr, DataTable, active_user.token, active_user.partition, active_user.row, props);
 		if(add_friend_result == status_codes::OK){
 			message.reply(status_codes::OK);
 			return;
@@ -223,7 +231,7 @@ void handle_put(http_request message){
 			return;
 		}
 		
-		pair<status_code,value> check_friends {get_entity_auth(basic_addr, "DataTable", active_user.token, active_user.partition, active_user.row)};
+		pair<status_code,value> check_friends {get_entity_auth(basic_addr, DataTable, active_user.token, active_user.partition, active_user.row)};
 		
 		string current_friends;
 		string check_for_no_friends;
@@ -250,7 +258,7 @@ void handle_put(http_request message){
 		}
 		
 		value props { build_json_object(vector<pair<string,string>> { make_pair(string("Friends"),string(current_friends))})};
-		int unfriend_result = put_entity_auth(basic_addr, "DataTable", active_user.token, active_user.partition, active_user.row, props);
+		int unfriend_result = put_entity_auth(basic_addr, DataTable, active_user.token, active_user.partition, active_user.row, props);
 		
 		if(unfriend_result == status_codes::OK){
 			message.reply(status_codes::OK);
@@ -261,6 +269,7 @@ void handle_put(http_request message){
 			return;
 		}
 	}
+	
 	// paths[0] == UpdateStatus | paths[1] == <UserID> | paths[2] == <User Status>
 	if(paths[0]==update_status){
 		if(!active_user.active){ // User is not signed in
@@ -270,15 +279,31 @@ void handle_put(http_request message){
 		
 		value props { build_json_object(vector<pair<string,string>> { make_pair(string("Status"),string(paths[2]))}) };
 		
-		pair<status_code,value> check_status {get_entity_auth(basic_addr, "DataTable", active_user.token, active_user.partition, active_user.row)};
+		pair<status_code,value> check_status {get_entity_auth(basic_addr, DataTable, active_user.token, active_user.partition, active_user.row)};
 		
-		int status_change_result = put_entity_auth(basic_addr, "DataTable", active_user.token, active_user.partition, active_user.row, props);
+		int status_change_result = put_entity_auth(basic_addr, DataTable, active_user.token, active_user.partition, active_user.row, props);
 		
 		// Operations for the Push Server goes here; update all friends of your status
 		
 		message.reply(status_codes::OK);
 		return;
 	}
+	// paths[0] == ReadFriendList | paths[1] == <UserID>
+	if(paths[0]==read_friend_list){
+		if(!active_user.active){ // User is not signed in
+			message.reply(status_codes::Forbidden);
+			return;
+		}
+		pair<status_code,value> read_result {get_entity_auth(basic_addr, DataTable, active_user.token, active_user.partition, active_user.row)};
+		if( read_result.first == status_codes::OK ){
+			message.reply(status_codes::OK, read_result.second ); // Needs to be tested for whether or not the JSON property is being passed back properly
+			return;
+		}
+	}
+	
+	// If the code reaches here, then a Malformed Request was done (eg. paths[0] == "DoSomething")
+	message.reply(status_codes::BadRequest);
+	return;
 }
 
 void handle_post(http_request message) {
@@ -344,6 +369,9 @@ void handle_post(http_request message) {
 			return;
 		}
 		
+		// If the code reaches here, then a Malformed Request was done (eg. paths[0] == "DoSomething")
+		message.reply(status_codes::BadRequest);
+		return;
 	}
 }
 
