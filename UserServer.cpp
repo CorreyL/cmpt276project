@@ -185,6 +185,7 @@ void handle_put(http_request message){
   cout << endl << "**** PUT " << path << endl;
   auto paths = uri::split_path(path);
 	const string DataTable {"DataTable"};
+	// paths[0] == AddFriend | paths[1] == <UserID> | paths[2] == <Friend's Country> | paths[3] == <<Friend's Last Name>,<Friend's First Name>>
 	if(paths[0]==add_friend){
 		if(!active_user.active){
 			message.reply(status_codes::Forbidden);
@@ -195,7 +196,7 @@ void handle_put(http_request message){
 			message.reply(status_codes::BadRequest);
 			return;
 		}
-		pair<status_code,value> check_friends {get_entity_auth(basic_addr, "DataTable", active_user.token, active_user.partition, active_user.row)};
+		pair<status_code,value> check_friends {get_entity_auth(basic_addr, DataTable, active_user.token, active_user.partition, active_user.row)};
 		string new_friend;
 		string check_for_no_friends;
 		for (const auto& v : check_friends.second.as_object()){
@@ -342,13 +343,13 @@ void handle_post(http_request message) {
 				message.reply(status_codes::OK);
 				return;
 			}
-			else{
+			else{ // No record exists in DataTable for this user
 				message.reply(status_codes::NotFound);
 				return;
 			}
 		}
 		else{
-			message.reply(status_codes::NotFound);
+			message.reply(status_codes::NotFound); // AuthServer responded NotFound
 			return;
 		}
 		

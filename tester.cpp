@@ -672,10 +672,6 @@ SUITE(GET) {
     CHECK_EQUAL(1, first_test.second.as_array().size());
 
     //Update all entities to have the same one as the first
-    pair<status_code,value> result = {
-    do_request (methods::PUT,
-    string(BasicFixture::addr) + add_property_admin + string(BasicFixture::table), value::object (vector<pair<string,value>>
-             {make_pair(property, value::string(prop_val))}))};
 
     //Check that all entities now have the added property (It's 5 because Franklin Aretha got infected too, poor guy)
     pair<status_code,value> second_test = {get_Entities_from_property(BasicFixture::addr, BasicFixture::table, property, prop_val)};
@@ -684,7 +680,7 @@ SUITE(GET) {
 
     //Check that an invalid AddProperty gets a 400 code   
     //Invalid because no table specified
-    result = {
+    pair<status_code,value> result = {
     do_request (methods::PUT,
     string(BasicFixture::addr) + "AddProperty/")};
     CHECK_EQUAL(status_codes::BadRequest, result.first);
@@ -1461,52 +1457,105 @@ SUITE(ENTITY_AUTH) {
   }
 }
 
-//Ted's test, I think it tests the new BasicServer operations? Breaks really hard as of writing this comment
-/*
-SUITE(UPDATE_AUTH) {
-  TEST_FIXTURE(AuthFixture,  PutAuth) {
-    pair<string,string> added_prop {make_pair(string("born"),string("1942"))};
+class UserFixture {
+public:
+  static constexpr const char* addr {"http://localhost:34568/"};
+  static constexpr const char* auth_addr {"http://localhost:34570/"};
+  static constexpr const char* user_addr {"http://localhost:34572/"};
+  static constexpr const char* userId {"Aidan"};
+  static constexpr const char* user_pwd {"SuperCool"};
+  static constexpr const char* auth_table {"AuthTable"};
+  static constexpr const char* auth_table_partition {"Userid"};
+  static constexpr const char* auth_pwd_prop {"Password"};
+  static constexpr const char* auth_dataPartition {"DataPartition"};
+  static constexpr const char* auth_dataRow {"DataRow"};
+  static constexpr const char* table {"DataTable"};
+  static constexpr const char* partition {"Aidan"};
+  static constexpr const char* row {"Wessel"};
+  static constexpr const char* property {"Bearded"};
+  static constexpr const char* prop_val {"You_Bet"};
+  static constexpr const char* friends {"Friends"};
+  static constexpr const char* status {"Status"};
+  static constexpr const char* updates {"Updates"};
+  static constexpr const char* blank {""};
 
-    cout << "Requesting token" << endl;
-    pair<status_code,string> token_res {
-      get_update_token(AuthFixture::auth_addr,
-                       AuthFixture::userid,
-                       AuthFixture::user_pwd)};
-    cout << "Token response " << token_res.first << endl;
-    CHECK_EQUAL (token_res.first, status_codes::OK);
-    
+public:
+  UserFixture() {
+    //Ensure dataTable is created
+    int make_result {create_table(addr, table)};
+    cerr << "create result " << make_result << endl;
+    if (make_result != status_codes::Created && make_result != status_codes::Accepted) {
+      throw std::exception();
+      cout << "oops 0" << endl;
+    }
+    //Add an entity that UserID and Password can work on
+    int put_result {put_entity (addr, table, partition, row, property, prop_val)};
+    cerr << "put result " << put_result << endl;
+    if (put_result != status_codes::OK) {
+      cout << "oops 1" << endl;
+      throw std::exception();
+    }
+    // Give this entity the required properties
+    string friendsNoError = friends;
+    string statusNoError = status;
+    string updatesNoError = updates;
     pair<status_code,value> result {
-      do_request (methods::PUT,
-                  string(AuthFixture::addr)
-                  + update_entity_auth + "/"
-                  + AuthFixture::table + "/"
-                  + token_res.second + "/"
-                  + AuthFixture::partition + "/"
-                  + AuthFixture::row,
-                  value::object (vector<pair<string,value>>
-                                   {make_pair(added_prop.first,
-                                              value::string(added_prop.second))})
-                  )};
-    CHECK_EQUAL(status_codes::OK, result.first);
-    
-    pair<status_code,value> ret_res {
-      do_request (methods::GET,
-                  string(AuthFixture::addr)
-                  + read_entity_admin + "/"
-                  + AuthFixture::table + "/"
-                  + AuthFixture::partition + "/"
-                  + AuthFixture::row)};
-    CHECK_EQUAL (status_codes::OK, ret_res.first);
-    value expect {
-      build_json_object (
-                         vector<pair<string,string>> {
-                           added_prop,
-                           make_pair(string(AuthFixture::property), 
-                                     string(AuthFixture::prop_val))}
-                         )};
-                             
-    cout << AuthFixture::property << endl;
-    compare_json_values (expect, ret_res.second);
+    do_request (methods::PUT,
+                addr + update_entity_admin + "/" + table + "/" + partition + "/" + row,
+                value::object (vector<pair<string,value>>
+                {make_pair(friendsNoError, value::string(blank)),
+                 make_pair(updatesNoError, value::string(blank)),
+                 make_pair(statusNoError, value::string(blank))}))};
+    if (result.first != status_codes::OK) {
+      cout << result.second << endl;
+      cout << "oops 2" << endl;
+      throw std::exception();
+    }
+
+    // Ensure userid and password in system
+    int user_result {put_entity (addr,
+                                 auth_table,
+                                 auth_table_partition,
+                                 userId,
+                                 auth_pwd_prop,
+                                 user_pwd)};
+    cerr << "user auth table insertion result " << user_result << endl;
+    if (user_result != status_codes::OK){
+      cout << "oops 3" << endl;
+      throw std::exception();
+    }
+
+    //Give this userid and password a dataRow and dataPartition property corresponding to the data entitiy above
+    string partNoError = auth_dataPartition;
+    string rowNoError = auth_dataRow;
+    result = {
+    do_request (methods::PUT,
+                addr + update_entity_admin + "/" + table + "/" + partition + "/" + row,
+                value::object (vector<pair<string,value>>
+                {make_pair(partNoError, value::string(partition)), make_pair(rowNoError, value::string(row))}))};
+    if (result.first != status_codes::OK) {
+      cout << "oops 4" << endl;
+      throw std::exception();
+    }
+  }
+
+  ~UserFixture() {
+    int del_ent_result {delete_entity (addr, table, partition, row)};
+    if (del_ent_result != status_codes::OK) {
+      cout << "oops 5" << endl;
+      throw std::exception();
+    }
+    del_ent_result = {delete_entity (addr, auth_table, auth_table_partition, userId)};
+    if (del_ent_result != status_codes::OK) {
+      cout << "oops 6" << endl;
+      throw std::exception();
+    }
+  }
+};
+
+SUITE(USER_SERVER_OPS){
+  TEST_FIXTURE(UserFixture, signOn){
+    //WORK IN PROGRESS (setting up that fixture is harder than it looks)
+    cout << "Bueno" << endl;
   }
 }
-*/
