@@ -147,10 +147,9 @@ void handle_post(http_request message) {
 				for ( const auto& v : get_result.second.as_object() ){
 					if(v.first == "Updates") extract_json[v.first] = v.second.as_string();
 				}
-				// Everything is fine up to here
-				// Is the issue a result of the person not existing, thus when you do got->second, it doesn't get anything?
 				unordered_map<string,string>::const_iterator got = extract_json.find("Updates");
 				if( got != extract_json.end() ){
+					cout << "We made it in." << endl;
 					current_properties = got->second;
 					int update_result = put_entity(current_country, current_name, prop, current_properties+paths[2]+":"+paths[3]+"\n" );
 				}
