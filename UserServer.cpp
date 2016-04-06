@@ -194,7 +194,7 @@ void handle_get(http_request message) {
   auto paths = uri::split_path(path);
 	const string DataTable {"DataTable"};
 	
-		// paths[0] == ReadFriendList | paths[1] == <UserID>
+	// paths[0] == ReadFriendList | paths[1] == <UserID>
 	if(paths[0]==read_friend_list){
 		if( active_users.find(paths[1]) == active_users.end() ){
 			message.reply(status_codes::Forbidden);
@@ -202,8 +202,16 @@ void handle_get(http_request message) {
 		}
 		
 		pair<status_code,value> read_result {get_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2])};
+		
+		string current_friends;
+		for (const auto& v : read_result.second.as_object()){
+			if(v.first == "Friends") current_friends = v.second.as_string();
+		}
+		
+		value props { build_json_object(vector<pair<string,string>> { make_pair(string("Friends"),string(current_friends))})};
+		
 		if( read_result.first == status_codes::OK ){
-			message.reply(status_codes::OK, read_result.second ); // Needs to be tested for whether or not the JSON property is being passed back properly
+			message.reply(status_codes::OK, props); // Needs to be tested for whether or not the JSON property is being passed back properly
 			return;
 		}
 	}
@@ -319,6 +327,10 @@ void handle_put(http_request message){
 			return;
 		}
 		
+		value status_prop { build_json_object(vector<pair<string,string>> { make_pair(string("Status"),string(paths[2])) } ) };
+		
+		int status_change_result = put_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2], status_prop);
+		
 		pair<status_code,value> check_friends {get_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2])};
 		
 		string current_friends;
@@ -336,10 +348,6 @@ void handle_put(http_request message){
 			}
 		}
 		// cout << "Current friends is: " << current_friends << endl;
-		
-		value status_prop { build_json_object(vector<pair<string,string>> { make_pair(string("Status"),string(paths[2])) } ) };
-		
-		int status_change_result = put_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2], status_prop);
 		
 		// pair<status_code,value> check_status {get_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2])};
 		
