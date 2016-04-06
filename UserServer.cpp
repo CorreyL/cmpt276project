@@ -401,8 +401,11 @@ void handle_post(http_request message) {
 			return;
 		}
 		const string userID {paths[1]};
+		string pwd {};
 		unordered_map<string,string>::const_iterator got = stored_message.find("Password");
-		const string pwd {got->second};
+		if( got != stored_message.end() ){
+			pwd = got->second;
+		}
 		pair<status_code,string> auth_result {get_update_token(auth_addr, userID, pwd)};
 		if(auth_result.first == status_codes::OK){
 			const string DataTable = "DataTable";
@@ -426,12 +429,7 @@ void handle_post(http_request message) {
 			pair<status_code,value> data_result {get_entity_auth(basic_addr, DataTable, auth_result.second, partition, row)};
 			
 			if(data_result.first == status_codes::OK){
-				active_users.insert( { paths[1], {auth_result.second, partition, row} } );
-				/*
-				active_users[paths[1]][0] = 
-				active_users[paths[1]][1] = ;
-				active_users[paths[1]][2] = row;
-				*/
+				active_users.insert( { paths[1], {auth_result.second, partition, row} } ); // Adding the user to the unordered_map of active users
 				message.reply(status_codes::OK);
 				return;
 			}
