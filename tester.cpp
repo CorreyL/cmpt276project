@@ -405,7 +405,7 @@ pair<status_code,string> get_read_token(const string& addr,  const string& useri
 
 //Helper function to dump a table's contents (useful for debugging)
 void dump_table_contents(const string& tableName){
-  pair<status_code,value> result = { do_request (methods::GET, "http://localhost:34568/"
+  pair<status_code,value> result = { do_request (methods::GET, "http://localhost:34572/"
                                       + read_entity_admin + "/"
                                       + string(tableName))};
   cout << result.second << endl;
@@ -421,8 +421,8 @@ int signOn(const string& userId, const string& password){
 }
 
 //Helper function to sign off
-int signOn(const string& userId){
-    pair<status_code,value> signOffresult {do_request(methods::POST, "http://localhost:34568/" + sign_off + "/" + userId)};
+int signOff(const string& userId){
+    pair<status_code,value> signOffresult {do_request(methods::POST, "http://localhost:34572/" + sign_off + "/" + userId)};
     return signOffresult.first;
 }
 
@@ -1575,21 +1575,13 @@ public:
 
 SUITE(USER_SERVER_OPS){
   TEST_FIXTURE(UserFixture, signOnOff){
-    string password_prop = "Password";
+    int signOnresult {signOn(string(UserFixture::userId), string(UserFixture::user_pwd))};
+    cout <<"Sign on result " << signOnresult << endl;
+    CHECK_EQUAL(status_codes::OK, signOnresult);
 
-    pair<status_code,value> signOnresult {
-    do_request(methods::POST,
-    user_addr + sign_on + "/" + UserFixture::userId, value::object (vector<pair<string,value>>
-                {make_pair(password_prop, value::string(UserFixture::user_pwd))}))};
-
-    cout <<"Sign on result " << signOnresult.first << endl;
-    CHECK_EQUAL(status_codes::OK, signOnresult.first);
-
-    pair<status_code,value> signOffresult {
-    do_request(methods::POST,
-    user_addr + sign_off + "/" + UserFixture::userId)};
-    cout <<"Sign off result " << signOffresult.first << endl;
-    CHECK_EQUAL(status_codes::OK, signOffresult.first);
+    int signOffresult {signOff(string(UserFixture::userId))};
+    cout <<"Sign off result " << signOffresult << endl;
+    CHECK_EQUAL(status_codes::OK, signOffresult);
 
   }
 
