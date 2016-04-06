@@ -67,17 +67,6 @@ const string unfriend {"UnFriend"};
 const string update_status {"UpdateStatus"};
 const string read_friend_list {"ReadFriendList"};
 const string push_status {"PushStatus"};
-/*
-class active_user{
-	public:
-		bool active {false};
-		string token {};
-		string partition {};
-		string row {};
-};
-
-active_user active_user; // Does it need to be rebuilt so that multiple users can be on at once?
-*/
 
 // To ensure multiple users can be logged on at once, the UserID will be the key, and the vector will hold the following information in this order:
 // vector<string>[0] = (token)
