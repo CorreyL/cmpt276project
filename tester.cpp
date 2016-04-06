@@ -1558,4 +1558,29 @@ SUITE(USER_SERVER_OPS){
     //WORK IN PROGRESS (setting up that fixture is harder than it looks)
     cout << "Bueno" << endl;
   }
+
+    TEST_FIXTURE(UserFixture, signOff){
+    //WORK IN PROGRESS (setting up that fixture is harder than it looks)
+    cout << "Bueno" << endl;
+  }
+
+    TEST_FIXTURE(UserFixture, addFriend){
+    //WORK IN PROGRESS (setting up that fixture is harder than it looks)
+    cout << "Bueno" << endl;
+  }
+
+    TEST_FIXTURE(UserFixture, unFriend){
+    //WORK IN PROGRESS (setting up that fixture is harder than it looks)
+    cout << "Bueno" << endl;
+  }
+
+    TEST_FIXTURE(UserFixture, getFriendList){
+    //WORK IN PROGRESS (setting up that fixture is harder than it looks)
+    cout << "Bueno" << endl;
+  }
+
+    TEST_FIXTURE(UserFixture, badRequests){
+    //WORK IN PROGRESS (setting up that fixture is harder than it looks)
+    cout << "Bueno" << endl;
+  }
 }
