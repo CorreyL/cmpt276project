@@ -188,6 +188,31 @@ pair<status_code,value> push_user_status(const string& partition, const string& 
 	return result;
 }
 
+void handle_get(http_request message) {
+  string path {uri::decode(message.relative_uri().path())};
+  cout << endl << "**** GET " << path << endl;
+  auto paths = uri::split_path(path);
+	const string DataTable {"DataTable"};
+	
+		// paths[0] == ReadFriendList | paths[1] == <UserID>
+	if(paths[0]==read_friend_list){
+		if( active_users.find(paths[1]) == active_users.end() ){
+			message.reply(status_codes::Forbidden);
+			return;
+		}
+		
+		pair<status_code,value> read_result {get_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2])};
+		if( read_result.first == status_codes::OK ){
+			message.reply(status_codes::OK, read_result.second ); // Needs to be tested for whether or not the JSON property is being passed back properly
+			return;
+		}
+	}
+	
+	// If the code reaches here, then a Malformed Request was done (eg. paths[0] == "DoSomething")
+	message.reply(status_codes::BadRequest);
+	return;
+}
+
 void handle_put(http_request message){
 	string path {uri::decode(message.relative_uri().path())};
   cout << endl << "**** PUT " << path << endl;
@@ -332,20 +357,6 @@ void handle_put(http_request message){
 		message.reply(status_codes::OK);
 		return;
 	}
-	// paths[0] == ReadFriendList | paths[1] == <UserID>
-	if(paths[0]==read_friend_list){
-		if( active_users.find(paths[1]) == active_users.end() ){
-			message.reply(status_codes::Forbidden);
-			return;
-		}
-		
-		pair<status_code,value> read_result {get_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2])};
-		if( read_result.first == status_codes::OK ){
-			message.reply(status_codes::OK, read_result.second ); // Needs to be tested for whether or not the JSON property is being passed back properly
-			return;
-		}
-	}
-	
 	// If the code reaches here, then a Malformed Request was done (eg. paths[0] == "DoSomething")
 	message.reply(status_codes::BadRequest);
 	return;
@@ -429,7 +440,7 @@ int main (int argc, char const * argv[]) {
   // table_cache.init (storage_connection_string);
 
   cout << "Opening listener" << endl;
-  //listener.support(methods::GET, &handle_get);
+  listener.support(methods::GET, &handle_get);
   listener.support(methods::POST, &handle_post);
   listener.support(methods::PUT, &handle_put);
   //listener.support(methods::DEL, &handle_delete);
