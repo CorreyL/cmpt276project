@@ -55,7 +55,7 @@ const string get_update_token_op {"GetUpdateToken"};
 const string sign_on {"SignOn"};
 const string sign_off {"SignOff"};
 const string add_friend {"AddFriend"};
-const string unfriend {"UnFriend"};
+const string un_friend {"UnFriend"};
 const string update_status {"UpdateStatus"};
 const string read_friend_list {"ReadFriendList"};
 
@@ -399,6 +399,29 @@ pair<status_code,string> get_read_token(const string& addr,  const string& useri
     string token {result.second["token"].as_string()};
     return make_pair (result.first, token);
   }
+}
+
+//Helper function to dump a table's contents (useful for debugging)
+void dump_table_contents(const string& tableName){
+  pair<status_code,value> result = { do_request (methods::GET, "http://localhost:34568/"
+                                      + read_entity_admin + "/"
+                                      + string(tableName))};
+  cout << result.second << endl;
+}
+
+//Helper function to sign on
+int signOn(const string& userId, const string& password){
+    pair<status_code,value> signOnresult {
+    do_request(methods::POST,
+    user_addr + sign_on + "/" + userId, value::object (vector<pair<string,value>>
+                {make_pair("Password", value::string(password))}))};
+    return signOnresult.first;
+}
+
+//Helper function to sign off
+int signOn(const string& userId){
+    pair<status_code,value> signOffresult {do_request(methods::POST, "http://localhost:34568/" + sign_off + "/" + userId);
+    return signOffresult.first;
 }
 
 /********************
@@ -1493,29 +1516,23 @@ public:
     cerr << "create result " << make_result << endl;
     if (make_result != status_codes::Created && make_result != status_codes::Accepted) {
       throw std::exception();
-      cout << "oops 0" << endl;
     }
     //Add an entity that UserID and Password can work on
     int put_result {put_entity (addr, table, partition, row, property, prop_val)};
     cerr << "put result " << put_result << endl;
     if (put_result != status_codes::OK) {
-      cout << "oops 1" << endl;
       throw std::exception();
     }
     // Give this entity the required properties
-    string friendsNoError = friends;
-    string statusNoError = status;
-    string updatesNoError = updates;
     pair<status_code,value> result {
     do_request (methods::PUT,
                 addr + update_entity_admin + "/" + table + "/" + partition + "/" + row,
                 value::object (vector<pair<string,value>>
-                {make_pair(friendsNoError, value::string(blank)),
-                 make_pair(updatesNoError, value::string(blank)),
-                 make_pair(statusNoError, value::string(blank))}))};
+                {make_pair(string(friends), value::string(blank)),
+                 make_pair(string(updates), value::string(blank)),
+                 make_pair(string(status), value::string(blank))}))};
     if (result.first != status_codes::OK) {
       cout << result.second << endl;
-      cout << "oops 2" << endl;
       throw std::exception();
     }
 
@@ -1528,20 +1545,16 @@ public:
                                  user_pwd)};
     cerr << "user auth table insertion result " << user_result << endl;
     if (user_result != status_codes::OK){
-      cout << "oops 3" << endl;
       throw std::exception();
     }
 
     //Give this userid and password a dataRow and dataPartition property corresponding to the data entitiy above
-    string partNoError = auth_dataPartition;
-    string rowNoError = auth_dataRow;
     result = {
     do_request (methods::PUT,
-                addr + update_entity_admin + "/" + table + "/" + partition + "/" + row,
+                addr + update_entity_admin + "/" + auth_table + "/" + auth_table_partition + "/" + userId,
                 value::object (vector<pair<string,value>>
-                {make_pair(partNoError, value::string(partition)), make_pair(rowNoError, value::string(row))}))};
+                {make_pair(string(auth_dataPartition), value::string(partition)), make_pair(string(auth_dataRow), value::string(row))}))};
     if (result.first != status_codes::OK) {
-      cout << "oops 4" << endl;
       throw std::exception();
     }
   }
@@ -1549,27 +1562,33 @@ public:
   ~UserFixture() {
     int del_ent_result {delete_entity (addr, table, partition, row)};
     if (del_ent_result != status_codes::OK) {
-      cout << "oops 5" << endl;
       throw std::exception();
     }
     del_ent_result = {delete_entity (addr, auth_table, auth_table_partition, userId)};
     if (del_ent_result != status_codes::OK) {
-      cout << "oops 6" << endl;
       throw std::exception();
     }
   }
 };
 
 SUITE(USER_SERVER_OPS){
-  TEST_FIXTURE(UserFixture, signOn){
-    pair<status_code,value> result {
-    do_request(methods::PUT,
-    user_addr + update_entity_auth + "/" + table + "/" + tok + "/" + partition + "/" + row, props)};
-  }
+  TEST_FIXTURE(UserFixture, signOnOff){
+    string password_prop = "Password";
 
-    TEST_FIXTURE(UserFixture, signOff){
-    //WORK IN PROGRESS (setting up that fixture is harder than it looks)
-    cout << "Bueno" << endl;
+    pair<status_code,value> signOnresult {
+    do_request(methods::POST,
+    user_addr + sign_on + "/" + UserFixture::userId, value::object (vector<pair<string,value>>
+                {make_pair(password_prop, value::string(UserFixture::user_pwd))}))};
+
+    cout <<"Sign on result " << signOnresult.first << endl;
+    CHECK_EQUAL(status_codes::OK, signOnresult.first);
+
+    pair<status_code,value> signOffresult {
+    do_request(methods::POST,
+    user_addr + sign_off + "/" + UserFixture::userId)};
+    cout <<"Sign off result " << signOffresult.first << endl;
+    CHECK_EQUAL(status_codes::OK, signOffresult.first);
+
   }
 
     TEST_FIXTURE(UserFixture, addFriend){
