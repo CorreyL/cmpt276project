@@ -63,6 +63,8 @@ const string read_friend_list {"ReadFriendList"};
 const string add_property_admin {"AddPropertyAdmin"};
 const string update_property_admin {"UpdatePropertyAdmin"};
 
+static constexpr const char* user_addr {"http://localhost:34572/"};
+
 /*
   Make an HTTP request, returning the status code and any JSON value in the body
 
@@ -420,7 +422,7 @@ int signOn(const string& userId, const string& password){
 
 //Helper function to sign off
 int signOn(const string& userId){
-    pair<status_code,value> signOffresult {do_request(methods::POST, "http://localhost:34568/" + sign_off + "/" + userId);
+    pair<status_code,value> signOffresult {do_request(methods::POST, "http://localhost:34568/" + sign_off + "/" + userId)};
     return signOffresult.first;
 }
 

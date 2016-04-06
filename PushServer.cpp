@@ -149,7 +149,6 @@ void handle_post(http_request message) {
 				}
 				unordered_map<string,string>::const_iterator got = extract_json.find("Updates");
 				if( got != extract_json.end() ){
-					cout << "We made it in." << endl;
 					current_properties = got->second;
 					int update_result = put_entity(current_country, current_name, prop, current_properties+paths[2]+":"+paths[3]+"\n" );
 				}
