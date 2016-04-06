@@ -57,6 +57,7 @@ static constexpr const char* basic_addr {"http://localhost:34568/"};
 static constexpr const char* push_addr {"http://localhost:34574/"};
 
 const string read_entity_auth {"ReadEntityAuth"};
+const string read_entity_admin {"ReadEntityAdmin"};
 const string get_update_token_op {"GetUpdateToken"};
 const string update_entity_auth {"UpdateEntityAuth"};
 const string sign_on {"SignOn"};
@@ -237,7 +238,9 @@ void handle_put(http_request message){
 			message.reply(status_codes::BadRequest);
 			return;
 		}
+		
 		pair<status_code,value> check_friends {get_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2])};
+		string current_friends;
 		string new_friend;
 		string check_for_no_friends;
 		for (const auto& v : check_friends.second.as_object()){
@@ -247,11 +250,17 @@ void handle_put(http_request message){
 			new_friend = paths[2] + ";" + paths[3];
 		}
 		else{
-			string current_friends;
 			for (const auto& v : check_friends.second.as_object()){
 				if(v.first == "Friends") current_friends = v.second.as_string();
 			}
 			new_friend = current_friends + "|" + paths[2] + ";" + paths[3];
+		}
+		
+		string already_exists {paths[2]+";"+paths[3]};
+		
+		if(current_friends.find(already_exists) != string::npos){
+			message.reply(status_codes::OK);
+			return;
 		}
 		
 		value props { build_json_object(vector<pair<string,string>> { make_pair(string("Friends"),string(new_friend))})};
@@ -273,6 +282,13 @@ void handle_put(http_request message){
 			return;
 		}
 		
+		// A check to see whether or not the specified country and name is found in DataTable
+		pair<status_code,value> entry_exists { do_request(methods::GET, basic_addr + read_entity_admin + "/" + DataTable + "/" + paths[2] + "/" + paths[3]) };
+		if(entry_exists.first == status_codes::NotFound){
+			message.reply(status_codes::NotFound);
+			return;
+		}
+		
 		pair<status_code,value> check_friends {get_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2])};
 		
 		string current_friends;
@@ -290,12 +306,9 @@ void handle_put(http_request message){
 				if( v.first == "Friends") current_friends = v.second.as_string();
 			}
 		}
-		// cout << "Current_friends before: " << current_friends << endl;
-		if(current_friends.find("|") == string::npos){ // This user only has one friend
-			// string passed_in {paths[2] + ";" + paths[3]};
-			// cout << "Passed In Friend Is: " << passed_in << endl;
+
+		if(current_friends.find(passed_in) != string::npos){ // This user only has one friend, and that friend is the friend being looked for
 			current_friends.erase( current_friends.find(passed_in), passed_in.length() );
-			// cout << "Current_friends is now: " << current_friends << endl;
 		}
 		else if( current_friends.find(passed_in+"|") != string::npos ){ // This friend is the first entry in the friends list
 			current_friends.erase( current_friends.find(passed_in), passed_in.length()+1 );
@@ -303,10 +316,10 @@ void handle_put(http_request message){
 		else if( current_friends.find("|"+passed_in+"|") != string::npos ){ // This friend is a middle entry in the friends list
 			current_friends.erase( current_friends.find(passed_in), passed_in.length()+1 );
 		}
-		else{ // This friend is the last entry in the friends list
+		else if (current_friends.find("|"+passed_in) != string::npos ){ // This friend is the last entry in the friends list
 			current_friends.erase( current_friends.find(passed_in)-1, passed_in.length()+1 );
 		}
-		cout << "Current_friends is now: " << current_friends << endl;
+		
 		value props { build_json_object(vector<pair<string,string>> { make_pair(string("Friends"),string(current_friends))})};
 		int unfriend_result = put_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2], props);
 		
