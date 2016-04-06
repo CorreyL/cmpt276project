@@ -561,8 +561,8 @@ void handle_delete(http_request message) {
   else if (paths[0] == delete_entity) {
     // For delete entity, also need partition and row
     if (paths.size() < 4) {
-	message.reply(status_codes::BadRequest);
-	return;
+			message.reply(status_codes::BadRequest);
+			return;
     }
     table_entity entity {paths[2], paths[3]};
     cout << "Delete " << entity.partition_key() << " / " << entity.row_key()<< endl;
@@ -572,7 +572,7 @@ void handle_delete(http_request message) {
 
     int code {op_result.http_status_code()};
     if (code == status_codes::OK || 
-	code == status_codes::NoContent)
+			code == status_codes::NoContent)
       message.reply(status_codes::OK);
     else
       message.reply(code);

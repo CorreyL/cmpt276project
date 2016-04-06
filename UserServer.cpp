@@ -241,7 +241,7 @@ void handle_put(http_request message){
 		string new_friend;
 		string check_for_no_friends;
 		for (const auto& v : check_friends.second.as_object()){
-			check_for_no_friends = v.second.as_string();
+			if(v.first == "Friends") check_for_no_friends = v.second.as_string();
 		}
 		if( (check_friends.second.size() == 0) || (check_for_no_friends == "") ){ // User has no friends
 			new_friend = paths[2] + ";" + paths[3];
@@ -249,7 +249,7 @@ void handle_put(http_request message){
 		else{
 			string current_friends;
 			for (const auto& v : check_friends.second.as_object()){
-				current_friends = v.second.as_string();
+				if(v.first == "Friends") current_friends = v.second.as_string();
 			}
 			new_friend = current_friends + "|" + paths[2] + ";" + paths[3];
 		}
@@ -279,7 +279,7 @@ void handle_put(http_request message){
 		string check_for_no_friends;
 		string passed_in {paths[2] + ";" + paths[3]};
 		for (const auto& v : check_friends.second.as_object()){
-			check_for_no_friends = v.second.as_string();
+			if(v.first == "Friends") check_for_no_friends = v.second.as_string();
 		}
 		if( (check_friends.second.size() == 0) || (check_for_no_friends == "") ){ // User has no friends
 			message.reply(status_codes::OK);
@@ -287,15 +287,15 @@ void handle_put(http_request message){
 		}
 		else{
 			for (const auto& v : check_friends.second.as_object()){
-				current_friends = v.second.as_string();
+				if( v.first == "Friends") current_friends = v.second.as_string();
 			}
 		}
-		cout << "Current_friends before: " << current_friends << endl;
+		// cout << "Current_friends before: " << current_friends << endl;
 		if(current_friends.find("|") == string::npos){ // This user only has one friend
 			// string passed_in {paths[2] + ";" + paths[3]};
-			cout << "Passed In Friend Is: " << passed_in << endl;
+			// cout << "Passed In Friend Is: " << passed_in << endl;
 			current_friends.erase( current_friends.find(passed_in), passed_in.length() );
-			cout << "Current_friends is now: " << current_friends << endl;
+			// cout << "Current_friends is now: " << current_friends << endl;
 		}
 		else if( current_friends.find(passed_in+"|") != string::npos ){ // This friend is the first entry in the friends list
 			current_friends.erase( current_friends.find(passed_in), passed_in.length()+1 );
@@ -394,10 +394,24 @@ void handle_post(http_request message) {
 		if(auth_result.first == status_codes::OK){
 			const string DataTable = "DataTable";
 			// Begin parsing the partition and row from the token
-			const string row = auth_result.second.substr(auth_result.second.find("&erk=")+5, auth_result.second.length());
+			string row = auth_result.second.substr(auth_result.second.find("&erk=")+5, auth_result.second.length());
 			string partition = auth_result.second.substr(auth_result.second.find("&epk=")+5, auth_result.second.find("&erk="));
 			partition.erase(partition.length()-(row.length()+5), partition.length());
+			
+			// If there's a "," present in the DataRow, then Azure generates a token with "%2C" in place of ",". Need to change "%2C" with ",".
+			if( row.find("%2C") != string::npos ){
+				row.insert(row.find("%2C"),",");
+				string html_comma = "%2C";
+				row.erase(row.find("%2C"), html_comma.length());
+			}
+			/*
+			if( partition.find("%2C") != string::npos ){
+				partition.insert(partition.find("%2C"),",");
+				partition.erase(partition.find("%2C"), partition.find("%2C")+3);
+			}
+			*/
 			pair<status_code,value> data_result {get_entity_auth(basic_addr, DataTable, auth_result.second, partition, row)};
+			
 			if(data_result.first == status_codes::OK){
 				active_users.insert( { paths[1], {auth_result.second, partition, row} } );
 				/*

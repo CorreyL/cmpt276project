@@ -148,7 +148,10 @@ void handle_post(http_request message) {
 					if(v.first == "Updates") extract_json[v.first] = v.second.as_string();
 				}
 				unordered_map<string,string>::const_iterator got = extract_json.find("Updates");
-				if( got != extract_json.end() ){
+				if( got == extract_json.end() ){ // The user that we're trying to access does not have the property "Updates"
+					int update_result = put_entity(current_country, current_name, prop, paths[2]+":"+paths[3]+"\n" );
+				}
+				else{
 					current_properties = got->second;
 					int update_result = put_entity(current_country, current_name, prop, current_properties+paths[2]+":"+paths[3]+"\n" );
 				}
