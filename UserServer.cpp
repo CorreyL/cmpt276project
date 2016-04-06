@@ -281,14 +281,7 @@ void handle_put(http_request message){
 			message.reply(status_codes::Forbidden);
 			return;
 		}
-		
-		// A check to see whether or not the specified country and name is found in DataTable
-		pair<status_code,value> entry_exists { do_request(methods::GET, basic_addr + read_entity_admin + "/" + DataTable + "/" + paths[2] + "/" + paths[3]) };
-		if(entry_exists.first == status_codes::NotFound){
-			message.reply(status_codes::NotFound);
-			return;
-		}
-		
+
 		pair<status_code,value> check_friends {get_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2])};
 		
 		string current_friends;
@@ -335,7 +328,7 @@ void handle_put(http_request message){
 	
 	// paths[0] == UpdateStatus | paths[1] == <UserID> | paths[2] == <User Status>
 	if(paths[0]==update_status){
-		if( active_users.find(paths[1]) == active_users.end() ){
+		if( active_users.find(paths[1]) == active_users.end() ){ // User is not signed in
 			message.reply(status_codes::Forbidden);
 			return;
 		}
@@ -366,15 +359,21 @@ void handle_put(http_request message){
 		
 		value props { build_json_object(vector<pair<string,string>> { make_pair(string("Status"),string(paths[2])), make_pair(string("Friends"),string(current_friends) ) } ) };
 		
-		try{
-			// push_user_status(active_users[paths[1]][1], active_users[paths[1]][2], paths[2], props);
-			do_request( methods::POST, push_addr + push_status + "/" + active_users[paths[1]][1] + "/" + active_users[paths[1]][2] + "/" + paths[2], props );
-		}
-		catch(const web::uri_exception& e){
+		pair<status_code,value> push_status_result = do_request( methods::POST, push_addr + push_status + "/" + active_users[paths[1]][1] + "/" + active_users[paths[1]][2] + "/" + paths[2], props );
+		
+		if(push_status_result.first == status_codes::InternalError){
 			message.reply(status_codes::ServiceUnavailable);
 			return;
 		}
-		
+		/*
+		try{
+			// push_user_status(active_users[paths[1]][1], active_users[paths[1]][2], paths[2], props);
+			do_request( methods::POST, push_addr + push_status + "/" + active_users[paths[1]][1] + "/" + active_users[paths[1]][2] + "/" + paths[2], props );
+		}catch(const web::uri_exception& e){
+			message.reply(status_codes::ServiceUnavailable);
+			return;
+		}
+		*/
 		message.reply(status_codes::OK);
 		return;
 	}
