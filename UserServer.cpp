@@ -321,9 +321,13 @@ void handle_put(http_request message){
 		value props { build_json_object(vector<pair<string,string>> { make_pair(string("Status"),string(paths[2])), make_pair(string("Friends"),string(current_friends) ) } ) };
 		
 		//int status_change_result = put_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2], props);
-		
-		pair<status_code,value> result { push_user_status(active_users[paths[1]][1], active_users[paths[1]][2], paths[2], props) };
-		
+		try{
+			pair<status_code,value> result { push_user_status(active_users[paths[1]][1], active_users[paths[1]][2], paths[2], props) };
+		}
+		catch(const web::uri_exception& e){
+			message.reply(status_codes::ServiceUnavailable);
+			return;
+		}
 		message.reply(status_codes::OK);
 		return;
 	}
