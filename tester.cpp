@@ -1341,7 +1341,7 @@ SUITE(AUTH_GET_TOKENS) {
     pair<status_code,value> token_res {
       get_update_data_function(AuthFixture::auth_addr, AuthFixture::userid, AuthFixture::user_pwd)};
     cout << "Token response " << token_res.first << endl;
-		// The partition and row are currently what UserID: user and Password: user currently have in their DataPartition and DataRow properties, respectively. This will need to be adjusted to be a proper unit test ? (Ie. Tester puts in a UserID and Password into AuthTable, with a DataPartition and DataRow, and accordingly checks that GetUpdateData is returning the correct JSON object)
+		// The partition and row are currently what UserID: user and Password: user currently have in their DataPartition and DataRow properties, respectively. This will need to be adjusted to be a proper unit test. (Ie. Tester puts in a UserID and Password into AuthTable, with a DataPartition and DataRow, and accordingly checks after calling GetUpdateData that it is returning the correct JSON object, with the correct entries for DataPartition and DataRow)
 		string partition = "Canada";
 		string row = "Lim,Correy";
 		
