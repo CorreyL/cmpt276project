@@ -20,7 +20,7 @@
 #include "make_unique.h"
 
 #include "azure_keys.h"
-#include "ServerUtils.h"
+// #include "ServerUtils.h"
 #include "ClientUtils.h"
 
 using pplx::extensibility::critical_section_t;
@@ -310,7 +310,7 @@ void handle_put(http_request message){
 				if(v.first=="Friends") current_friends = v.second.as_string();
 			}
 		}
-		cout << "Current friends is: " << current_friends << endl;
+		// cout << "Current friends is: " << current_friends << endl;
 		
 		value status_prop { build_json_object(vector<pair<string,string>> { make_pair(string("Status"),string(paths[2])) } ) };
 		
@@ -320,11 +320,8 @@ void handle_put(http_request message){
 		
 		value props { build_json_object(vector<pair<string,string>> { make_pair(string("Status"),string(paths[2])), make_pair(string("Friends"),string(current_friends) ) } ) };
 		
-		//int status_change_result = put_entity_auth(basic_addr, DataTable, active_users[paths[1]][0], active_users[paths[1]][1], active_users[paths[1]][2], props);
-		
 		try{
 			// push_user_status(active_users[paths[1]][1], active_users[paths[1]][2], paths[2], props);
-			cout << "Here we go" << endl;
 			do_request( methods::POST, push_addr + push_status + "/" + active_users[paths[1]][1] + "/" + active_users[paths[1]][2] + "/" + paths[2], props );
 		}
 		catch(const web::uri_exception& e){
