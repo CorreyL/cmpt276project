@@ -52,6 +52,13 @@ const string update_entity_auth {"UpdateEntityAuth"};
 const string get_read_token_op  {"GetReadToken"};
 const string get_update_token_op {"GetUpdateToken"};
 
+const string sign_on {"SignOn"};
+const string sign_off {"SignOff"};
+const string add_friend {"AddFriend"};
+const string unfriend {"UnFriend"};
+const string update_status {"UpdateStatus"};
+const string read_friend_list {"ReadFriendList"};
+
 // The two optional operations from Assignment 1
 const string add_property_admin {"AddPropertyAdmin"};
 const string update_property_admin {"UpdatePropertyAdmin"};
@@ -1555,8 +1562,9 @@ public:
 
 SUITE(USER_SERVER_OPS){
   TEST_FIXTURE(UserFixture, signOn){
-    //WORK IN PROGRESS (setting up that fixture is harder than it looks)
-    cout << "Bueno" << endl;
+    pair<status_code,value> result {
+    do_request(methods::PUT,
+    user_addr + update_entity_auth + "/" + table + "/" + tok + "/" + partition + "/" + row, props)};
   }
 
     TEST_FIXTURE(UserFixture, signOff){
