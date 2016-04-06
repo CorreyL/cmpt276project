@@ -123,8 +123,11 @@ void handle_post(http_request message) {
 			return;
 		}
 		else{
+			string all_friends {};
 			unordered_map<string,string>::const_iterator got = stored_message.find("Friends");
-			string all_friends {got->second};
+			if( got != stored_message.end() ){
+				all_friends = got->second;
+			}
 			string current_friend {}; // Parsing out the first friend from the string of all the friends this user has
 			if(all_friends.find("|") == string::npos){
 				current_friend = all_friends;

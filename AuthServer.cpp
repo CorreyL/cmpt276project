@@ -190,7 +190,7 @@ void handle_get(http_request message) {
 	cloud_table data_table {table_cache.lookup_table("DataTable")};
 	
 	unordered_map<string,string> json_body {get_json_body (message)};
-	// paths[0] = GetReadToken | paths[1] = <table name> | paths[2] = <partition> | paths[3] = <row>
+	// paths[0] = GetUpdateData | paths[1] = <UserID>
 	if( paths[0] == get_read_token_op ){
 		table_query query {};
 		table_query_iterator end;
@@ -264,7 +264,7 @@ void handle_get(http_request message) {
 		message.reply( status_codes::NotFound ); // Userid was not found
 		return;
 	}
-	// paths[0] = GetUpdateToken | paths[1] = <table name> | paths[2] = <partition> | paths[3] = <row>
+	// paths[0] = GetUpdateToken | paths[1] = <UserID>
 	if( paths[0] == get_update_token_op ){
 		table_query query {};
 		table_query_iterator end;
@@ -336,7 +336,7 @@ void handle_get(http_request message) {
 			++it;
 		}
 	}
-	// paths[0] = GetUpdateData | paths[1] = <table name> | paths[2] = <partition> | paths[3] = <row>
+	// paths[0] = GetUpdateData | paths[1] = <UserID>
 	if( paths[0] == get_update_data ){
 		table_query query {};
 		table_query_iterator end;
@@ -388,7 +388,7 @@ void handle_get(http_request message) {
 									return;
 								}
 								else if(result.first == status_codes::OK){
-									prop_vals_t keys { make_pair("token",value::string(result.second)), make_pair("DataPartition", value::string(paths[2]) ), make_pair("DataRow", value::string(paths[3]) ) };
+									prop_vals_t keys { make_pair("token",value::string(result.second)), make_pair("DataPartition", value::string(partition) ), make_pair("DataRow", value::string(row) ) };
 									message.reply( status_codes::OK, value::object(keys) );
 								}
 							}

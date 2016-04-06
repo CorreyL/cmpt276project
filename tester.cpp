@@ -51,6 +51,7 @@ const string update_entity_auth {"UpdateEntityAuth"};
 
 const string get_read_token_op  {"GetReadToken"};
 const string get_update_token_op {"GetUpdateToken"};
+const string get_update_data {"GetUpdateData"};
 
 const string sign_on {"SignOn"};
 const string sign_off {"SignOff"};
@@ -529,6 +530,17 @@ pair<status_code,string> get_update_token(const string& addr,  const string& use
     string token {result.second["token"].as_string()};
     return make_pair (result.first, token);
   }
+}
+
+pair<status_code,value> get_update_data_function(const string& addr,  const string& userid, const string& password) {
+  value pwd {build_json_object (vector<pair<string,string>> {make_pair("Password", password)})};
+  pair<status_code,value> result {do_request (methods::GET,
+                                              addr +
+                                              get_update_data + "/" +
+                                              userid,
+                                              pwd
+                                              )};
+  return result;
 }
 
 /*
@@ -1322,7 +1334,32 @@ SUITE(AUTH_GET_TOKENS) {
     CHECK_EQUAL (status_codes::OK, token_res.first);
     CHECK_EQUAL(true, token_res.second.find(updateTokenIdentifier) != std::string::npos); // ie) token contains the little string that identifies it as update
   }
-
+	TEST_FIXTURE(AuthFixture, GetUpdateData){
+		string validUser_ID {AuthFixture::userid};
+		string validUser_pwd {AuthFixture::user_pwd};
+		cout << "Requesting token, DataPartition and DataRow" << endl;
+    pair<status_code,value> token_res {
+      get_update_data_function(AuthFixture::auth_addr, AuthFixture::userid, AuthFixture::user_pwd)};
+    cout << "Token response " << token_res.first << endl;
+		// The partition and row are currently what UserID: user and Password: user currently have in their DataPartition and DataRow properties, respectively. This will need to be adjusted to be a proper unit test ? (Ie. Tester puts in a UserID and Password into AuthTable, with a DataPartition and DataRow, and accordingly checks that GetUpdateData is returning the correct JSON object)
+		string partition = "Canada";
+		string row = "Lim,Correy";
+		
+		value json {build_json_object (vector<pair<string,string>> {make_pair("DataPartition", partition), make_pair("DataRow", row)})};
+		CHECK_EQUAL(token_res.first, status_codes::OK);
+		
+		// value passed_back_json = token_res.second;
+		string passed_back_partition {};
+		for (const auto& v : token_res.second.as_object()){
+			if(v.first == "DataPartition") passed_back_partition = v.second.as_string(); 
+		}
+		CHECK_EQUAL(partition, passed_back_partition);
+		string passed_back_row {};
+		for (const auto& v : token_res.second.as_object()){
+			if(v.first == "DataRow") passed_back_row = v.second.as_string(); 
+		}
+		CHECK_EQUAL(row, passed_back_row);
+	}
 }
 
 SUITE(ENTITY_AUTH) {
@@ -1477,7 +1514,7 @@ SUITE(ENTITY_AUTH) {
     CHECK(result.second.is_object());
     compare_json_values (expect_value, result.second);
 
-    //Trying making new entity
+    //Trying to make a new entity
     partition = "ShouldNot";
     row = "Work!";
     CHECK_EQUAL(status_codes::NotFound, put_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, partition, row,
