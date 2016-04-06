@@ -405,7 +405,7 @@ pair<status_code,string> get_read_token(const string& addr,  const string& useri
 
 //Helper function to dump a table's contents (useful for debugging)
 void dump_table_contents(const string& tableName){
-  pair<status_code,value> result = { do_request (methods::GET, "http://localhost:34568/"
+  pair<status_code,value> result = { do_request (methods::GET, "http://localhost:34572/"
                                       + read_entity_admin + "/"
                                       + string(tableName))};
   cout << result.second << endl;
@@ -413,17 +413,22 @@ void dump_table_contents(const string& tableName){
 
 //Helper function to sign on
 int signOn(const string& userId, const string& password){
-    pair<status_code,value> signOnresult {
+    pair<status_code,value> signOnResult {
     do_request(methods::POST,
     user_addr + sign_on + "/" + userId, value::object (vector<pair<string,value>>
                 {make_pair("Password", value::string(password))}))};
-    return signOnresult.first;
+    return signOnResult.first;
 }
 
 //Helper function to sign off
-int signOn(const string& userId){
-    pair<status_code,value> signOffresult {do_request(methods::POST, "http://localhost:34568/" + sign_off + "/" + userId)};
-    return signOffresult.first;
+int signOff(const string& userId){
+    pair<status_code,value> signOffResult {do_request(methods::POST, "http://localhost:34572/" + sign_off + "/" + userId)};
+    return signOffResult.first;
+}
+
+pair<status_code,value> ReadFriendList(const string& userId){
+    pair<status_code,value> readListResult {do_request(methods::GET, "http://localhost:34572/" + read_friend_list + "/" + userId)};
+    return readListResult;
 }
 
 /********************
@@ -1555,7 +1560,8 @@ public:
     do_request (methods::PUT,
                 addr + update_entity_admin + "/" + auth_table + "/" + auth_table_partition + "/" + userId,
                 value::object (vector<pair<string,value>>
-                {make_pair(string(auth_dataPartition), value::string(partition)), make_pair(string(auth_dataRow), value::string(row))}))};
+                {make_pair(string(auth_dataPartition), value::string(partition)),
+                 make_pair(string(auth_dataRow), value::string(row))}))};
     if (result.first != status_codes::OK) {
       throw std::exception();
     }
@@ -1575,22 +1581,74 @@ public:
 
 SUITE(USER_SERVER_OPS){
   TEST_FIXTURE(UserFixture, signOnOff){
-    string password_prop = "Password";
 
-    pair<status_code,value> signOnresult {
-    do_request(methods::POST,
-    user_addr + sign_on + "/" + UserFixture::userId, value::object (vector<pair<string,value>>
-                {make_pair(password_prop, value::string(UserFixture::user_pwd))}))};
+    //Ensure that a non-signed on request gets a forbidden
+    pair<status_code,value> FLResult = ReadFriendList(string(UserFixture::userId));
+    CHECK_EQUAL(status_codes::Forbidden, FLResult.first);
 
-    cout <<"Sign on result " << signOnresult.first << endl;
-    CHECK_EQUAL(status_codes::OK, signOnresult.first);
+    //Ensure that sign on works
+    int signOnResult {signOn(string(UserFixture::userId), string(UserFixture::user_pwd))};
+    cout <<"Sign on result " << signOnResult << endl;
+    CHECK_EQUAL(status_codes::OK, signOnResult);
 
-    pair<status_code,value> signOffresult {
-    do_request(methods::POST,
-    user_addr + sign_off + "/" + UserFixture::userId)};
-    cout <<"Sign off result " << signOffresult.first << endl;
-    CHECK_EQUAL(status_codes::OK, signOffresult.first);
+    //Ensure a second sign on (of the same user) works just like the first
+    signOnResult = {signOn(string(UserFixture::userId), string(UserFixture::user_pwd))};
+    cout <<"Sign on result " << signOnResult << endl;
+    CHECK_EQUAL(status_codes::OK, signOnResult);
 
+    //Now that the user is signed on, make sure a request works
+    FLResult = ReadFriendList(string(UserFixture::userId));
+    CHECK_EQUAL(status_codes::OK, FLResult.first);
+
+    string invalidUserId = "Awesomerizer";
+    string invalidUserPass = "OnSteam";
+    //Ensure that a sign on of an invalid userId/password combo gets a 404
+    signOnResult = {signOn(invalidUserId, invalidUserPass)};
+    cout <<"Sign on result " << signOnResult << endl;
+    CHECK_EQUAL(status_codes::NotFound, signOnResult);
+
+    //Ensure that a valid auth server entry with no corresponding row in the data table gets 404
+    string fakeUserID = "Daniel";
+    string fakeUserPassword = "Sedin";
+    string fakeUserDataPartition= "Vancouver";
+    string fakeUserDataRow = "Canucks";
+    int user_result {put_entity (string(addr),
+                                 string(auth_table),
+                                 string(auth_table_partition),
+                                 string(fakeUserID),
+                                 string(auth_pwd_prop),
+                                 string(fakeUserPassword))};
+    CHECK_EQUAL(status_codes::OK, user_result);
+
+    pair<status_code, value> addPropResult = {
+    do_request (methods::PUT,
+                addr + update_entity_admin + "/" + auth_table + "/" + auth_table_partition + "/" + fakeUserID,
+                value::object (vector<pair<string,value>>
+                {make_pair(string(auth_dataPartition), value::string(fakeUserDataPartition)),
+                 make_pair(string(auth_dataRow), value::string(fakeUserDataRow))}))};
+    CHECK_EQUAL(status_codes::OK, addPropResult.first);
+
+    signOnResult = {signOn(fakeUserID, fakeUserPassword)};
+    cout <<"Sign on result " << signOnResult << endl;
+    CHECK_EQUAL(status_codes::NotFound, signOnResult);
+
+    //Ensure that sign off works
+    int signOffResult {signOff(string(UserFixture::userId))};
+    cout <<"Sign off result " << signOffResult << endl;
+    CHECK_EQUAL(status_codes::OK, signOffResult);
+
+    //Try getting friends list after sign off, expecting another forbidden
+    FLResult = ReadFriendList(string(UserFixture::userId));
+    CHECK_EQUAL(status_codes::Forbidden, FLResult.first);
+
+    //Ensure that a second sign off gets a 404
+    signOffResult = {signOff(string(UserFixture::userId))};
+    cout <<"Sign off result " << signOffResult << endl;
+    CHECK_EQUAL(status_codes::NotFound, signOffResult);
+
+    int del_ent_result {delete_entity (addr, auth_table, auth_table_partition, fakeUserID)};
+    cout << "Delete Result: " << del_ent_result << endl;
+    CHECK_EQUAL(status_codes::OK, del_ent_result);
   }
 
     TEST_FIXTURE(UserFixture, addFriend){
