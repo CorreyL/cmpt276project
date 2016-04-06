@@ -405,7 +405,7 @@ pair<status_code,string> get_read_token(const string& addr,  const string& useri
 
 //Helper function to dump a table's contents (useful for debugging)
 void dump_table_contents(const string& tableName){
-  pair<status_code,value> result = { do_request (methods::GET, "http://localhost:34572/"
+  pair<status_code,value> result = { do_request (methods::GET, "http://localhost:34568/"
                                       + read_entity_admin + "/"
                                       + string(tableName))};
   cout << result.second << endl;
@@ -426,9 +426,84 @@ int signOff(const string& userId){
     return signOffResult.first;
 }
 
+//Helper function to read a user's friend list
 pair<status_code,value> ReadFriendList(const string& userId){
     pair<status_code,value> readListResult {do_request(methods::GET, "http://localhost:34572/" + read_friend_list + "/" + userId)};
     return readListResult;
+}
+
+//Helper function to add a friend
+int addFriend(const string& userID, const string& friendCountry, const string& friendName){
+  pair<status_code,value> result = do_request (methods::PUT,
+                user_addr + add_friend + "/" + userID + "/" + friendCountry + "/" + friendName);
+  cout << "Add friend result " << result.first << endl;
+  return result.first;
+}
+
+//Helper function to remove a friend
+int unFriend(const string& userID, const string& friendCountry, const string& friendName){
+  pair<status_code,value> result = do_request (methods::PUT,
+                user_addr + un_friend + "/" + userID + "/" + friendCountry + "/" + friendName);
+  cout << "Un friend result " << result.first << endl;
+  return result.first;
+}
+
+//Helper function to create a fake user (IN BOTH AUTHTABLE AND DATATABLE, REMEMBER TO DELETE BOTH)
+void createFakeUser(const string& userId, const string& user_pwd, const string& partition, const string& row){
+  string addr = "http://localhost:34568/";
+  string auth_table = "AuthTable";
+  string auth_table_partition  = "Userid";
+  string table = "DataTable";
+  string friends = "Friends";
+  string status = "Status";
+  string updates = "Updates";
+  string blank = "";
+  string auth_pwd_prop = "Password";
+  string auth_dataPartition = "DataPartition";
+  string auth_dataRow = "DataRow";
+
+  //Add an entity that UserID and Password can work on
+  int put_result {put_entity_no_properties (addr, table, partition, row)};
+  cerr << "put result " << put_result << endl;
+  if (put_result != status_codes::OK) {
+    throw std::exception();
+  }
+  //Give this entity the required properties
+  pair<status_code,value> result {
+  do_request (methods::PUT,
+              addr + update_entity_admin + "/" + table + "/" + partition + "/" + row,
+              value::object (vector<pair<string,value>>
+              {make_pair(string(friends), value::string(blank)),
+               make_pair(string(updates), value::string(blank)),
+               make_pair(string(status), value::string(blank))}))};
+  if (result.first != status_codes::OK) {
+    cout << result.second << endl;
+    throw std::exception();
+  }
+
+  //Ensure userid and password in system
+  int user_result {put_entity (addr,
+                               auth_table,
+                               auth_table_partition,
+                               userId,
+                               auth_pwd_prop,
+                               user_pwd)};
+  cerr << "user auth table insertion result " << user_result << endl;
+  if (user_result != status_codes::OK){
+    throw std::exception();
+  }
+
+  //Give this userid and password a dataRow and dataPartition property corresponding to the data entitiy above
+  result = {
+  do_request (methods::PUT,
+              addr + update_entity_admin + "/" + auth_table + "/" + auth_table_partition + "/" + userId,
+              value::object (vector<pair<string,value>>
+              {make_pair(string(auth_dataPartition), value::string(partition)),
+              make_pair(string(auth_dataRow), value::string(row))}))};
+  /*Add this at the end of your test to remove this fake user completely:
+     delete_entity (string(UserFixture::addr), string(UserFixture::auth_table), string(UserFixture::auth_table_partition), *USER ID HERE*);
+     delete_entity (string(UserFixture::addr), string(UserFixture::table), *PARTITION HERE*, *ROW HERE*);
+  */
 }
 
 /********************
@@ -1581,7 +1656,6 @@ public:
 
 SUITE(USER_SERVER_OPS){
   TEST_FIXTURE(UserFixture, signOnOff){
-
     //Ensure that a non-signed on request gets a forbidden
     pair<status_code,value> FLResult = ReadFriendList(string(UserFixture::userId));
     CHECK_EQUAL(status_codes::Forbidden, FLResult.first);
@@ -1600,9 +1674,9 @@ SUITE(USER_SERVER_OPS){
     FLResult = ReadFriendList(string(UserFixture::userId));
     CHECK_EQUAL(status_codes::OK, FLResult.first);
 
+    //Ensure that a sign on of an invalid userId/password combo gets a 404
     string invalidUserId = "Awesomerizer";
     string invalidUserPass = "OnSteam";
-    //Ensure that a sign on of an invalid userId/password combo gets a 404
     signOnResult = {signOn(invalidUserId, invalidUserPass)};
     cout <<"Sign on result " << signOnResult << endl;
     CHECK_EQUAL(status_codes::NotFound, signOnResult);
@@ -1632,8 +1706,21 @@ SUITE(USER_SERVER_OPS){
     cout <<"Sign on result " << signOnResult << endl;
     CHECK_EQUAL(status_codes::NotFound, signOnResult);
 
+    //Check to make sure that multiple sign ons are okay
+    string otherUserID = "user";
+    string otherUserPass = "user";
+
+    signOnResult = {signOn(otherUserID, otherUserPass)};
+    cout <<"Sign on result " << signOnResult << endl;
+    CHECK_EQUAL(status_codes::OK, signOnResult);
+
     //Ensure that sign off works
     int signOffResult {signOff(string(UserFixture::userId))};
+    cout <<"Sign off result " << signOffResult << endl;
+    CHECK_EQUAL(status_codes::OK, signOffResult);
+
+    //Sign off second sign in
+    signOffResult = {signOff(otherUserID)};
     cout <<"Sign off result " << signOffResult << endl;
     CHECK_EQUAL(status_codes::OK, signOffResult);
 
@@ -1646,27 +1733,82 @@ SUITE(USER_SERVER_OPS){
     cout <<"Sign off result " << signOffResult << endl;
     CHECK_EQUAL(status_codes::NotFound, signOffResult);
 
+    //Delete the extra added entitiy from the AuthTable
     int del_ent_result {delete_entity (addr, auth_table, auth_table_partition, fakeUserID)};
     cout << "Delete Result: " << del_ent_result << endl;
     CHECK_EQUAL(status_codes::OK, del_ent_result);
   }
 
-    TEST_FIXTURE(UserFixture, addFriend){
+  TEST_FIXTURE(UserFixture, friendOps){
+    //Sign On
+    int signOnResult {signOn(string(UserFixture::userId), string(UserFixture::user_pwd))};
+    cout <<"Sign on result " << signOnResult << endl;
+    CHECK_EQUAL(status_codes::OK, signOnResult);
+
+    //Ensure adding a friend works
+    string newFriendCountry = "USA";
+    string newFriendName = "Kitzmiller,Trevor";
+    int addResult = addFriend(UserFixture::userId, newFriendCountry, newFriendName);
+    CHECK_EQUAL(status_codes::OK, addResult);
+
+    //Add a second friend, shouldn't add another copy
+    addResult = addFriend(UserFixture::userId, newFriendCountry, newFriendName);
+    CHECK_EQUAL(status_codes::OK, addResult);
+
+    //View Friends list (debugging)
+    pair<status_code,value> FLResult = ReadFriendList(string(UserFixture::userId));
+    cout << FLResult.first << " " << FLResult.second << endl;
+
+    //Ensure removing friend works
+    int remResult = unFriend(UserFixture::userId, newFriendCountry, newFriendName);
+    CHECK_EQUAL(status_codes::OK, remResult);
+
+    //Remove the same friend again, should just do nothing
+    remResult = unFriend(UserFixture::userId, newFriendCountry, newFriendName);
+    CHECK_EQUAL(status_codes::OK, remResult);
+
+    //View Friends list (debugging)
+    FLResult = ReadFriendList(string(UserFixture::userId));
+    cout << FLResult.first << " " << FLResult.second << endl;
+
+    //Sign off
+    int signOffResult {signOff(string(UserFixture::userId))};
+    cout <<"Sign off result " << signOffResult << endl;
+    CHECK_EQUAL(status_codes::OK, signOffResult);
+  }
+
+  TEST_FIXTURE(UserFixture, getFriendList){
     //WORK IN PROGRESS (setting up that fixture is harder than it looks)
     cout << "Bueno" << endl;
   }
 
-    TEST_FIXTURE(UserFixture, unFriend){
-    //WORK IN PROGRESS (setting up that fixture is harder than it looks)
-    cout << "Bueno" << endl;
+  TEST_FIXTURE(UserFixture, updateStatus){
+    //Sign On
+    int signOnResult {signOn(string(UserFixture::userId), string(UserFixture::user_pwd))};
+    cout <<"Sign on result " << signOnResult << endl;
+    CHECK_EQUAL(status_codes::OK, signOnResult);
+
+
+    dump_table_contents("DataTable");
+
+    string newFriendCountry = "USA";
+    string newFriendName = "Kitzmiller,Trevor";
+    int addResult = addFriend(UserFixture::userId, newFriendCountry, newFriendName);
+    cout << endl;
+    dump_table_contents("DataTable");
+
+    do_request (methods::PUT,
+                user_addr + update_status + "/" + string(UserFixture::userId) + "/" + "Just_testing_things");
+    cout << endl;
+    dump_table_contents("DataTable");
+
+    //Sign off
+    int signOffResult {signOff(string(UserFixture::userId))};
+    cout <<"Sign off result " << signOffResult << endl;
+    CHECK_EQUAL(status_codes::OK, signOffResult);
   }
 
-    TEST_FIXTURE(UserFixture, getFriendList){
-    //WORK IN PROGRESS (setting up that fixture is harder than it looks)
-    cout << "Bueno" << endl;
-  }
-
-    TEST_FIXTURE(UserFixture, badRequests){
+  TEST_FIXTURE(UserFixture, badRequests){
     //WORK IN PROGRESS (setting up that fixture is harder than it looks)
     cout << "Bueno" << endl;
   }
