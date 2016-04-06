@@ -1572,6 +1572,7 @@ SUITE(ENTITY_AUTH) {
 class UserFixture {
 public:
   static constexpr const char* addr {"http://localhost:34568/"};
+  static constexpr const char* user_addr {"http://localhost:34572/"};
   static constexpr const char* auth_table {"AuthTable"};
   static constexpr const char* table {"DataTable"};
   static constexpr const char* auth_table_partition {"Userid"};
@@ -1580,18 +1581,18 @@ public:
 
   static constexpr const char* userID_A {"Aidan"};
   static constexpr const char* user_pwd_A {"SuperCool"};
-  static constexpr const char* partition_A {"Canada"};
-  static constexpr const char* row_A {"Wessel,Aidan"};
+  static constexpr const char* country_A {"Canada"};
+  static constexpr const char* name_A {"Wessel,Aidan"};
 
   static constexpr const char* userID_B {"Superman"};
   static constexpr const char* user_pwd_B {"Kryptonite"};
-  static constexpr const char* partition_B {"USA"};
-  static constexpr const char* row_B {"Kent,Clark"};
+  static constexpr const char* country_B {"USA"};
+  static constexpr const char* name_B {"Kent,Clark"};
 
   static constexpr const char* userID_C {"Batman"};
   static constexpr const char* user_pwd_C {"DarkKnight"};
-  static constexpr const char* partition_C {"USA"};
-  static constexpr const char* row_C {"Wayne,Bruce"};
+  static constexpr const char* country_C {"USA"};
+  static constexpr const char* name_C {"Wayne,Bruce"};
 
 
 public:
@@ -1603,13 +1604,13 @@ public:
       throw std::exception();
     }
     //Make some users
-    createFakeUser(userID_A, user_pwd_A, partition_A, row_A);
-    createFakeUser(userID_B, user_pwd_B, partition_B, row_B);
-    createFakeUser(userID_C, user_pwd_C, partition_C, row_C);
+    createFakeUser(userID_A, user_pwd_A, country_A, name_A);
+    createFakeUser(userID_B, user_pwd_B, country_B, name_B);
+    createFakeUser(userID_C, user_pwd_C, country_C, name_C);
   }
 
   ~UserFixture() {
-    int del_ent_result {delete_entity (addr, table, partition_A, row_A)};
+    int del_ent_result {delete_entity (addr, table, country_A, name_A)};
     if (del_ent_result != status_codes::OK) {
       throw std::exception();
     }
@@ -1617,7 +1618,7 @@ public:
     if (del_ent_result != status_codes::OK) {
       throw std::exception();
     }
-     del_ent_result = {delete_entity (addr, table, partition_B, row_B)};
+     del_ent_result = {delete_entity (addr, table, country_B, name_B)};
     if (del_ent_result != status_codes::OK) {
       throw std::exception();
     }
@@ -1625,7 +1626,7 @@ public:
     if (del_ent_result != status_codes::OK) {
       throw std::exception();
     }
-      del_ent_result = {delete_entity (addr, table, partition_C, row_C)};
+      del_ent_result = {delete_entity (addr, table, country_C, name_C)};
     if (del_ent_result != status_codes::OK) {
       throw std::exception();
     }
@@ -1795,7 +1796,40 @@ SUITE(USER_SERVER_OPS){
   }
 
   TEST_FIXTURE(UserFixture, badRequests){
-    //WORK IN PROGRESS (setting up that fixture is harder than it looks)
-    cout << "Bueno" << endl;
+    //Ensure various bad commands get 400
+    string badCommand = "DANCE";
+    cout << "Checking bad requests" << endl;
+
+    pair<status_code,value> result {
+    do_request(methods::POST,
+    user_addr + badCommand + "/" + userID_A)};
+    CHECK_EQUAL(status_codes::BadRequest, result.first);
+
+    result = {
+    do_request(methods::PUT,
+    user_addr + badCommand + "/" + userID_A)};
+    CHECK_EQUAL(status_codes::BadRequest, result.first);
+
+
+    result = {
+    do_request(methods::GET,
+    user_addr + badCommand + "/" + userID_A)};
+    CHECK_EQUAL(status_codes::BadRequest, result.first);
+
+    //Ensure disallowed methods get 405
+    result = {
+    do_request(methods::HEAD,
+    user_addr + badCommand + "/" + userID_A)};
+    CHECK_EQUAL(status_codes::MethodNotAllowed, result.first);
+
+    result = {
+    do_request(methods::DEL,
+    user_addr + badCommand + "/" + userID_A)};
+    CHECK_EQUAL(status_codes::MethodNotAllowed, result.first);
+
+    result = {
+    do_request(methods::CONNECT,
+    user_addr + badCommand + "/" + userID_A)};
+    CHECK_EQUAL(status_codes::MethodNotAllowed, result.first);
   }
 }
