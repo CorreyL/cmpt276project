@@ -1829,7 +1829,7 @@ SUITE(USER_SERVER_OPS){
 		}
 		CHECK_EQUAL(correct_friend_list, passed_back_friend_list);
 		
-		cout << "First Friend Check: " << passed_back_friend_list << endl;
+		// cout << "First Friend Check: " << passed_back_friend_list << endl;
 		
 		// Adding a second friend
 		newFriendCountry = "Canada";
@@ -1848,7 +1848,7 @@ SUITE(USER_SERVER_OPS){
 		correct_friend_list = "USA;Kitzmiller,Trevor|Canada;Quin,Tegan";
 		CHECK_EQUAL(correct_friend_list, passed_back_friend_list);
 		
-		cout << "Second Friend Check: " << passed_back_friend_list << endl;
+		// cout << "Second Friend Check: " << passed_back_friend_list << endl;
 		
 		// Adding a third friend
 		newFriendCountry = "Canada";
@@ -1865,7 +1865,7 @@ SUITE(USER_SERVER_OPS){
 		correct_friend_list = "USA;Kitzmiller,Trevor|Canada;Quin,Tegan|Canada;Quin,Sara";
 		CHECK_EQUAL(correct_friend_list, passed_back_friend_list);
 		
-		cout << "Third Friend Check: " << passed_back_friend_list << endl;
+		// cout << "Third Friend Check: " << passed_back_friend_list << endl;
 		
 		int remResult = unFriend(UserFixture::userID_A, newFriendCountry, newFriendName);
     CHECK_EQUAL(status_codes::OK, remResult);
@@ -1885,7 +1885,8 @@ SUITE(USER_SERVER_OPS){
     cout <<"Sign on result " << signOnResult << endl;
     CHECK_EQUAL(status_codes::OK, signOnResult);
 
-
+		createFakeUser("test1", "test1", "USA", "Kitzmiller,Trevor"); // Creates an entity in both AuthTable and DataTable - CODE FOR DELETION HAS NOT YET BEEN IMPLEMENTED
+		
     dump_table_contents("DataTable");
 
     string newFriendCountry = "USA";
@@ -1898,7 +1899,33 @@ SUITE(USER_SERVER_OPS){
                 user_addr + update_status + "/" + string(UserFixture::userID_A) + "/" + "Just_testing_things");
     cout << endl;
     dump_table_contents("DataTable");
-
+		
+		// Ensure own status was updated
+		pair<status_code,value> own_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, UserFixture::country_A, UserFixture::name_A);
+		string correct_status {"Just_testing_things"};
+		string passed_back_status {};
+		for (const auto& v : own_update_status_result.second.as_object()){
+			if(v.first == "Status") passed_back_status = v.second.as_string(); 
+		}
+		CHECK_EQUAL(correct_status, passed_back_status);
+		
+		// Ensure that status was placed in "Update":"" for DataTable entity for USA;Kitzmiller,Trevor
+		pair<status_code,value> friend_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, UserFixture::country_A, UserFixture::name_A);
+		string correct_update {"Wessel,Aidan:Just_testing_things\n"};
+		string passed_back_update {};
+		for (const auto& v : friend_update_status_result.second.as_object()){
+			if(v.first == "Updates") passed_back_update = v.second.as_string(); 
+		}
+		CHECK_EQUAL(correct_update, passed_back_update);
+		
+		// Delete USA;Kitzmiller,Trevor from DataTable
+		int delete_result = delete_entity (UserFixture::addr, UserFixture::table, newFriendCountry, newFriendName);
+		CHECK_EQUAL(status_codes::OK, delete_result);
+		
+		// Delete USA;Kitzmiller,Trevor from AuthTable
+		delete_result = delete_entity (UserFixture::addr, UserFixture::auth_table, newFriendCountry, newFriendName);
+		CHECK_EQUAL(status_codes::OK, delete_result);
+		
     //Sign off
     int signOffResult {signOff(string(UserFixture::userID_A))};
     cout <<"Sign off result " << signOffResult << endl;
