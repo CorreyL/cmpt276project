@@ -152,11 +152,11 @@ void handle_post(http_request message) {
 				}
 				unordered_map<string,string>::const_iterator got = extract_json.find("Updates");
 				if( got == extract_json.end() ){ // The user that we're trying to access does not have the property "Updates"
-					int update_result = put_entity(current_country, current_name, prop, paths[2]+":"+paths[3]+"\n" );
+					int update_result = put_entity(current_country, current_name, prop, paths[3]+"\n" );
 				}
 				else{
 					current_properties = got->second;
-					int update_result = put_entity(current_country, current_name, prop, current_properties+paths[2]+":"+paths[3]+"\n" );
+					int update_result = put_entity(current_country, current_name, prop, current_properties+paths[3]+"\n" );
 				}
 				/*
 				cout << "Current Friend is: " << current_friend << endl;

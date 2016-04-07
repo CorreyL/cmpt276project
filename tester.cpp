@@ -1912,7 +1912,7 @@ SUITE(USER_SERVER_OPS){
 		// Ensure that status was placed in "Update":"" for DataTable entity for USA;Kitzmiller,Trevor
 		pair<status_code,value> friend_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, newFriendCountry, newFriendName);
 		dump_table_contents("DataTable");
-		string correct_update {"Wessel,Aidan:Just_testing_things\n"};
+		string correct_update {"Just_testing_things\n"};
 		string passed_back_update {};
 		for (const auto& v : friend_update_status_result.second.as_object()){
 			if(v.first == "Updates") passed_back_update = v.second.as_string(); 
