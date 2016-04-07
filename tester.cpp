@@ -1910,7 +1910,8 @@ SUITE(USER_SERVER_OPS){
 		CHECK_EQUAL(correct_status, passed_back_status);
 		
 		// Ensure that status was placed in "Update":"" for DataTable entity for USA;Kitzmiller,Trevor
-		pair<status_code,value> friend_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, UserFixture::country_A, UserFixture::name_A);
+		pair<status_code,value> friend_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, newFriendCountry, newFriendName);
+		dump_table_contents("DataTable");
 		string correct_update {"Wessel,Aidan:Just_testing_things\n"};
 		string passed_back_update {};
 		for (const auto& v : friend_update_status_result.second.as_object()){
@@ -1923,7 +1924,7 @@ SUITE(USER_SERVER_OPS){
 		CHECK_EQUAL(status_codes::OK, delete_result);
 		
 		// Delete USA;Kitzmiller,Trevor from AuthTable
-		delete_result = delete_entity (UserFixture::addr, UserFixture::auth_table, newFriendCountry, newFriendName);
+		delete_result = delete_entity (UserFixture::addr, UserFixture::auth_table, "Userid", "test1");
 		CHECK_EQUAL(status_codes::OK, delete_result);
 		
     //Sign off
