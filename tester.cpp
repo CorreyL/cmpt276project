@@ -507,10 +507,6 @@ void createFakeUser(const string& userId, const string& user_pwd, const string& 
   */
 }
 
-/********************
-**CODE ADDED - STOP**
-********************/
-
 /*
   Utility to get a token good for updating a specific entry
   from a specific table for one day.
@@ -542,6 +538,11 @@ pair<status_code,value> get_update_data_function(const string& addr,  const stri
                                               )};
   return result;
 }
+
+
+/********************
+**CODE ADDED - STOP**
+********************/
 
 /*
   A sample fixture that ensures TestTable exists, and
@@ -1799,13 +1800,85 @@ SUITE(USER_SERVER_OPS){
     int signOffResult {signOff(string(UserFixture::userID_A))};
     cout <<"Sign off result " << signOffResult << endl;
     CHECK_EQUAL(status_codes::OK, signOffResult);
+		
   }
 
   TEST_FIXTURE(UserFixture, getFriendList){
-    //WORK IN PROGRESS (setting up that fixture is harder than it looks)
-    cout << "Bueno" << endl;
-  }
-
+		//Sign On
+    int signOnResult {signOn(string(UserFixture::userID_A), string(UserFixture::user_pwd_A))};
+    cout <<"Sign on result " << signOnResult << endl;
+    CHECK_EQUAL(status_codes::OK, signOnResult);
+		
+		// Ensure adding a friend works
+    string newFriendCountry = "USA";
+    string newFriendName = "Kitzmiller,Trevor";
+		// For unfriending
+		string first_friend_country = newFriendCountry;
+		string first_friend_name = newFriendName;
+    int addResult = addFriend(UserFixture::userID_A, newFriendCountry, newFriendName);
+    CHECK_EQUAL(status_codes::OK, addResult);
+		
+		// Check that ReadFriendList works for 1 friend
+		pair<status_code,value> friend_list_result = ReadFriendList(UserFixture::userID_A);
+		// value tester_friend_list {build_json_object (vector<pair<string,string>> {make_pair("Friends", "USA;Kitzmiller,Trevor")})};
+		string correct_friend_list {"USA;Kitzmiller,Trevor"};
+		
+		string passed_back_friend_list {};
+		for (const auto& v : friend_list_result.second.as_object()){
+			if(v.first == "Friends") passed_back_friend_list = v.second.as_string(); 
+		}
+		CHECK_EQUAL(correct_friend_list, passed_back_friend_list);
+		
+		cout << "First Friend Check: " << passed_back_friend_list << endl;
+		
+		// Adding a second friend
+		newFriendCountry = "Canada";
+    newFriendName = "Quin,Tegan";
+		string second_friend_country = newFriendCountry;
+		string second_friend_name = newFriendName;
+    addResult = addFriend(UserFixture::userID_A, newFriendCountry, newFriendName);
+    CHECK_EQUAL(status_codes::OK, addResult);
+		
+		// Check that ReadFriendList works for 2 friends
+		friend_list_result = ReadFriendList(UserFixture::userID_A);
+		
+		for (const auto& v : friend_list_result.second.as_object()){
+			if(v.first == "Friends") passed_back_friend_list = v.second.as_string(); 
+		}
+		correct_friend_list = "USA;Kitzmiller,Trevor|Canada;Quin,Tegan";
+		CHECK_EQUAL(correct_friend_list, passed_back_friend_list);
+		
+		cout << "Second Friend Check: " << passed_back_friend_list << endl;
+		
+		// Adding a third friend
+		newFriendCountry = "Canada";
+    newFriendName = "Quin,Sara";
+    addResult = addFriend(UserFixture::userID_A, newFriendCountry, newFriendName);
+    CHECK_EQUAL(status_codes::OK, addResult);
+		
+		// Check that ReadFriendList works for 3 friends
+		friend_list_result = ReadFriendList(UserFixture::userID_A);
+		
+		for (const auto& v : friend_list_result.second.as_object()){
+			if(v.first == "Friends") passed_back_friend_list = v.second.as_string(); 
+		}
+		correct_friend_list = "USA;Kitzmiller,Trevor|Canada;Quin,Tegan|Canada;Quin,Sara";
+		CHECK_EQUAL(correct_friend_list, passed_back_friend_list);
+		
+		cout << "Third Friend Check: " << passed_back_friend_list << endl;
+		
+		int remResult = unFriend(UserFixture::userID_A, newFriendCountry, newFriendName);
+    CHECK_EQUAL(status_codes::OK, remResult);
+		remResult = unFriend(UserFixture::userID_A, second_friend_country, second_friend_name);
+    CHECK_EQUAL(status_codes::OK, remResult);
+		remResult = unFriend(UserFixture::userID_A, first_friend_country, first_friend_name);
+    CHECK_EQUAL(status_codes::OK, remResult);
+		
+		int signOffResult = {signOff(string(UserFixture::userID_A))};
+    cout <<"Sign off result " << signOffResult << endl;
+    CHECK_EQUAL(status_codes::OK, signOffResult);
+	}
+	
   TEST_FIXTURE(UserFixture, updateStatus){
     //Sign On
     int signOnResult {signOn(string(UserFixture::userID_A), string(UserFixture::user_pwd_A))};
