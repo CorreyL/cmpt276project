@@ -1685,12 +1685,10 @@ SUITE(USER_SERVER_OPS){
 
     //Ensure that sign on works
     int signOnResult {signOn(string(UserFixture::userID_A), string(UserFixture::user_pwd_A))};
-    cout <<"Sign on result " << signOnResult << endl;
     CHECK_EQUAL(status_codes::OK, signOnResult);
 
     //Ensure a second sign on (of the same user) works just like the first
     signOnResult = {signOn(string(UserFixture::userID_A), string(UserFixture::user_pwd_A))};
-    cout <<"Sign on result " << signOnResult << endl;
     CHECK_EQUAL(status_codes::OK, signOnResult);
 
     //Now that the user is signed on, make sure a request works
@@ -1701,7 +1699,6 @@ SUITE(USER_SERVER_OPS){
     string invalidUserId = "Awesomerizer";
     string invalidUserPass = "OnSteam";
     signOnResult = {signOn(invalidUserId, invalidUserPass)};
-    cout <<"Sign on result " << signOnResult << endl;
     CHECK_EQUAL(status_codes::NotFound, signOnResult);
 
     //Ensure that a valid auth server entry with no corresponding row in the data table gets 404
@@ -1730,7 +1727,6 @@ SUITE(USER_SERVER_OPS){
     CHECK_EQUAL(status_codes::OK, addPropResult.first);
 
     signOnResult = {signOn(fakeUserID, fakeUserPassword)};
-    cout <<"Sign on result " << signOnResult << endl;
     CHECK_EQUAL(status_codes::NotFound, signOnResult);
 
     //Check to make sure that multiple sign ons are okay
@@ -1738,17 +1734,14 @@ SUITE(USER_SERVER_OPS){
     string otherUserPass = "user";
 
     signOnResult = {signOn(otherUserID, otherUserPass)};
-    cout <<"Sign on result " << signOnResult << endl;
     CHECK_EQUAL(status_codes::OK, signOnResult);
 
     //Ensure that sign off works
     int signOffResult {signOff(string(UserFixture::userID_A))};
-    cout <<"Sign off result " << signOffResult << endl;
     CHECK_EQUAL(status_codes::OK, signOffResult);
 
     //Sign off second sign in
     signOffResult = {signOff(otherUserID)};
-    cout <<"Sign off result " << signOffResult << endl;
     CHECK_EQUAL(status_codes::OK, signOffResult);
 
     //Try getting friends list after sign off, expecting another forbidden
@@ -1757,7 +1750,6 @@ SUITE(USER_SERVER_OPS){
 
     //Ensure that a second sign off gets a 404
     signOffResult = {signOff(string(UserFixture::userID_A))};
-    cout <<"Sign off result " << signOffResult << endl;
     CHECK_EQUAL(status_codes::NotFound, signOffResult);
 
     //Delete the extra added entitiy from the AuthTable
@@ -1794,27 +1786,87 @@ SUITE(USER_SERVER_OPS){
     int remResult = unFriend(UserFixture::userID_A, string(UserFixture::country_B), string(UserFixture::name_B));
     CHECK_EQUAL(status_codes::OK, remResult);
     getResult = get_partition_entity (addr, table, country_A, name_A);
-    CHECK_EQUAL(true, getResult.second["Friends"].as_string().length() == 0);
+    CHECK_EQUAL(true, getResult.second["Friends"].as_string().empty()); //Should now be empty
 
     //Remove the same friend again, should just do nothing
     remResult = unFriend(UserFixture::userID_A, string(UserFixture::country_B), string(UserFixture::name_B));
     CHECK_EQUAL(status_codes::OK, remResult);
     getResult = get_partition_entity (addr, table, country_A, name_A);
-    CHECK_EQUAL(true, getResult.second["Friends"].as_string().length() == 0);
+    CHECK_EQUAL(true, getResult.second["Friends"].as_string().empty()); //Should still be empty
 
     //Now, with muliple users
     //Sign on B & C
+    signOnResult  = {signOn(string(UserFixture::userID_B), string(UserFixture::user_pwd_B))};
+    CHECK_EQUAL(status_codes::OK, signOnResult);
+    signOnResult  = {signOn(string(UserFixture::userID_C), string(UserFixture::user_pwd_C))};
+    CHECK_EQUAL(status_codes::OK, signOnResult);
 
-    //Sign off A
+    //Ensure adding a friend works
+    addResult = addFriend(UserFixture::userID_A, string(UserFixture::country_B), string(UserFixture::name_B));
+    CHECK_EQUAL(status_codes::OK, addResult);
+    getResult = get_partition_entity (addr, table, country_A, name_A);
+    findResult = (getResult.second["Friends"].as_string().find(friendEntryB) != string::npos);
+    CHECK_EQUAL(true, findResult);
+
+    //Ensure adding a friend works (B adds C)
+    addResult = addFriend(UserFixture::userID_B, string(UserFixture::country_C), string(UserFixture::name_C));
+    CHECK_EQUAL(status_codes::OK, addResult);
+    getResult = get_partition_entity (addr, table, country_B, name_B);
+    findResult = (getResult.second["Friends"].as_string().find(friendEntryC) != string::npos);
+    CHECK_EQUAL(true, findResult);
+
+    //Ensure adding a friend works (C adds B)
+    addResult = addFriend(UserFixture::userID_C, string(UserFixture::country_B), string(UserFixture::name_B));
+    CHECK_EQUAL(status_codes::OK, addResult);
+    getResult = get_partition_entity (addr, table, country_C, name_C);
+    findResult = (getResult.second["Friends"].as_string().find(friendEntryB) != string::npos);
+    CHECK_EQUAL(true, findResult);
+
+    //Ensure adding a friend works (A adds C)
+    addResult = addFriend(UserFixture::userID_A, string(UserFixture::country_C), string(UserFixture::name_C));
+    CHECK_EQUAL(status_codes::OK, addResult);
+    getResult = get_partition_entity (addr, table, country_A, name_A);
+    findResult = (getResult.second["Friends"].as_string().find(friendEntryC) != string::npos);
+    CHECK_EQUAL(true, findResult);
+
+    //Now, removing
+    remResult = unFriend(UserFixture::userID_A, string(UserFixture::country_B), string(UserFixture::name_B));
+    CHECK_EQUAL(status_codes::OK, remResult);
+    getResult = get_partition_entity (addr, table, country_A, name_A);
+    CHECK_EQUAL(true, getResult.second["Friends"].as_string() == friendEntryC); //Should now be just friend entry C (B removed)
+    cout << "Failure 1:" << getResult.second["Friends"].as_string() << endl;
+
+    remResult = unFriend(UserFixture::userID_B, string(UserFixture::country_C), string(UserFixture::name_C));
+    CHECK_EQUAL(status_codes::OK, remResult);
+    getResult = get_partition_entity (addr, table, country_B, name_B);
+    CHECK_EQUAL(true, getResult.second["Friends"].as_string().empty()); //Should now be empty
+
+    remResult = unFriend(UserFixture::userID_C, string(UserFixture::country_B), string(UserFixture::name_B));
+    CHECK_EQUAL(status_codes::OK, remResult);
+    getResult = get_partition_entity (addr, table, country_C, name_C);
+    CHECK_EQUAL(true, getResult.second["Friends"].as_string().empty()); //Should now be empty
+
+    remResult = unFriend(UserFixture::userID_A, string(UserFixture::country_C), string(UserFixture::name_C));
+    CHECK_EQUAL(status_codes::OK, remResult);
+    getResult = get_partition_entity (addr, table, country_A, name_A);
+    CHECK_EQUAL(true, getResult.second["Friends"].as_string().empty()); //Should now be empty
+    cout << "Failure 2:" << getResult.second["Friends"].as_string() << endl;
+
+    //Sign off everyone
     int signOffResult {signOff(string(UserFixture::userID_A))};
     CHECK_EQUAL(status_codes::OK, signOffResult);
+    signOffResult = {signOff(string(UserFixture::userID_B))};
+    CHECK_EQUAL(status_codes::OK, signOffResult);
+    signOffResult = {signOff(string(UserFixture::userID_C))};
+    CHECK_EQUAL(status_codes::OK, signOffResult);
+    
+    
 		
   }
 
   TEST_FIXTURE(UserFixture, getFriendList){
 		//Sign On
     int signOnResult {signOn(string(UserFixture::userID_A), string(UserFixture::user_pwd_A))};
-    cout <<"Sign on result " << signOnResult << endl;
     CHECK_EQUAL(status_codes::OK, signOnResult);
 		
 		// Ensure adding a friend works
@@ -1883,14 +1935,12 @@ SUITE(USER_SERVER_OPS){
     CHECK_EQUAL(status_codes::OK, remResult);
 		
 		int signOffResult = {signOff(string(UserFixture::userID_A))};
-    cout <<"Sign off result " << signOffResult << endl;
     CHECK_EQUAL(status_codes::OK, signOffResult);
 	}
 	
   TEST_FIXTURE(UserFixture, updateStatus){
     //Sign On
     int signOnResult {signOn(string(UserFixture::userID_A), string(UserFixture::user_pwd_A))};
-    cout <<"Sign on result " << signOnResult << endl;
     CHECK_EQUAL(status_codes::OK, signOnResult);
 
 		createFakeUser("test1", "test1", "USA", "Kitzmiller,Trevor"); // Creates an entity in both AuthTable and DataTable
@@ -1930,7 +1980,6 @@ SUITE(USER_SERVER_OPS){
 		
 		// Begin test for two simultaneous users
 		signOnResult = signOn(string(UserFixture::userID_B), string(UserFixture::user_pwd_B));
-    cout <<"Sign on result " << signOnResult << endl;
     CHECK_EQUAL(status_codes::OK, signOnResult);
 		
 		// User B adds User A to their list of friends
@@ -1996,7 +2045,6 @@ SUITE(USER_SERVER_OPS){
 		
     //Sign off
     int signOffResult {signOff(string(UserFixture::userID_A))};
-    cout <<"Sign off result " << signOffResult << endl;
     CHECK_EQUAL(status_codes::OK, signOffResult);
   }
 
