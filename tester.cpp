@@ -1921,38 +1921,62 @@ SUITE(USER_SERVER_OPS){
 		CHECK_EQUAL(correct_update, passed_back_update);
 		
 		// Begin test for two simultaneous users
-		/*
-		signOnResult {signOn(string(UserFixture::userID_B), string(UserFixture::user_pwd_B))};
+		signOnResult = signOn(string(UserFixture::userID_B), string(UserFixture::user_pwd_B));
     cout <<"Sign on result " << signOnResult << endl;
     CHECK_EQUAL(status_codes::OK, signOnResult);
 		
 		// User B adds User A to their list of friends
-		int addResult = addFriend(UserFixture::userID_B, UserFixture::country_A, UserFixture::name_A);
+		addResult = addFriend(UserFixture::userID_B, UserFixture::country_A, UserFixture::name_A);
 		// User A adds User B to their list of friends
-		int addResult = addFriend(UserFixture::userID_A, UserFixture::country_B, UserFixture::name_B);
+		addResult = addFriend(UserFixture::userID_A, UserFixture::country_B, UserFixture::name_B);
 		
 		// User A updates their status again
 		do_request (methods::PUT, user_addr + update_status + "/" + string(UserFixture::userID_A) + "/" + "Cannot_wait_for_finals_to_be_over");
 		
 		// Ensure own status was updated
 		own_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, UserFixture::country_A, UserFixture::name_A);
-		correct_status {"Cannot_wait_for_finals_to_be_over"};
-		passed_back_status {};
+		correct_status = "Cannot_wait_for_finals_to_be_over";
 		for (const auto& v : own_update_status_result.second.as_object()){
 			if(v.first == "Status") passed_back_status = v.second.as_string(); 
 		}
 		CHECK_EQUAL(correct_status, passed_back_status);
 		
 		// This should appear in User B and friend USA;Kitzmiller,Trevor under "Updates"
-		pair<status_code,value> friend_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, UserFixture::country_A, UserFixture::name_A);
-		string correct_update {"Just_testing_things\n"};
-		string passed_back_update {};
+		// Checking USA;Kitzmiller,Trevor first (should also have previous Status Update from User A)
+		friend_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, newFriendCountry, newFriendName);
+		correct_update = "Cannot_wait_for_finals_to_be_over\nJust_testing_things\n";
 		for (const auto& v : friend_update_status_result.second.as_object()){
 			if(v.first == "Updates") passed_back_update = v.second.as_string(); 
 		}
 		CHECK_EQUAL(correct_update, passed_back_update);
 		
-		*/
+		// Checking User B
+		friend_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, UserFixture::country_B, UserFixture::name_B);
+		correct_update = "Cannot_wait_for_finals_to_be_over\n";
+		for (const auto& v : friend_update_status_result.second.as_object()){
+			if(v.first == "Updates") passed_back_update = v.second.as_string();
+		}
+		CHECK_EQUAL(correct_update, passed_back_update);
+		
+		// Now User B updates their status
+		do_request (methods::PUT, user_addr + update_status + "/" + string(UserFixture::userID_B) + "/" + "Dark_Souls_3_comes_out_around_finals_whyyyyyy");
+		
+		// Ensure own status was updated
+		own_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, UserFixture::country_B, UserFixture::name_B);
+		correct_status = "Dark_Souls_3_comes_out_around_finals_whyyyyyy";
+		for (const auto& v : own_update_status_result.second.as_object()){
+			if(v.first == "Status") passed_back_status = v.second.as_string(); 
+		}
+		CHECK_EQUAL(correct_status, passed_back_status);
+		
+		// This should appear in User A
+		// Checking User A
+		friend_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, UserFixture::country_A, UserFixture::name_A);
+		correct_update = "Dark_Souls_3_comes_out_around_finals_whyyyyyy\n";
+		for (const auto& v : friend_update_status_result.second.as_object()){
+			if(v.first == "Updates") passed_back_update = v.second.as_string();
+		}
+		CHECK_EQUAL(correct_update, passed_back_update);
 		
 		// Delete USA;Kitzmiller,Trevor from DataTable
 		int delete_result = delete_entity (UserFixture::addr, UserFixture::table, newFriendCountry, newFriendName);
