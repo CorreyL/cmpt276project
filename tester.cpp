@@ -1830,11 +1830,13 @@ SUITE(USER_SERVER_OPS){
     CHECK_EQUAL(true, findResult);
 
     //Now, removing
+		dump_table_contents("DataTable");
     remResult = unFriend(UserFixture::userID_A, string(UserFixture::country_B), string(UserFixture::name_B));
     CHECK_EQUAL(status_codes::OK, remResult);
     getResult = get_partition_entity (addr, table, country_A, name_A);
     CHECK_EQUAL(true, getResult.second["Friends"].as_string() == friendEntryC); //Should now be just friend entry C (B removed)
-    cout << "Failure 1:" << getResult.second["Friends"].as_string() << endl;
+    // cout << "Failure 1:" << getResult.second["Friends"].as_string() << endl;
+		// dump_table_contents("DataTable");
 
     remResult = unFriend(UserFixture::userID_B, string(UserFixture::country_C), string(UserFixture::name_C));
     CHECK_EQUAL(status_codes::OK, remResult);
@@ -1850,7 +1852,8 @@ SUITE(USER_SERVER_OPS){
     CHECK_EQUAL(status_codes::OK, remResult);
     getResult = get_partition_entity (addr, table, country_A, name_A);
     CHECK_EQUAL(true, getResult.second["Friends"].as_string().empty()); //Should now be empty
-    cout << "Failure 2:" << getResult.second["Friends"].as_string() << endl;
+    // cout << "Failure 2:" << getResult.second["Friends"].as_string() << endl;
+		// dump_table_contents("DataTable");
 
     //Sign off everyone
     int signOffResult {signOff(string(UserFixture::userID_A))};
@@ -1998,10 +2001,10 @@ SUITE(USER_SERVER_OPS){
 		}
 		CHECK_EQUAL(correct_status, passed_back_status);
 		
-		// This should appear in User B and friend USA;Kitzmiller,Trevor under "Updates"
+		// User A's status update should appear in User B and friend USA;Kitzmiller,Trevor under "Updates"
 		// Checking USA;Kitzmiller,Trevor first (should also have previous Status Update from User A)
 		friend_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, newFriendCountry, newFriendName);
-		correct_update = "Cannot_wait_for_finals_to_be_over\nJust_testing_things\n";
+		correct_update = "Just_testing_things\nCannot_wait_for_finals_to_be_over\n";
 		for (const auto& v : friend_update_status_result.second.as_object()){
 			if(v.first == "Updates") passed_back_update = v.second.as_string(); 
 		}

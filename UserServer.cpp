@@ -289,10 +289,7 @@ void handle_put(http_request message){
 			}
 		}
 
-		if(current_friends.find(passed_in) != string::npos){ // This user only has one friend, and that friend is the friend being looked for
-			current_friends.erase( current_friends.find(passed_in), passed_in.length() );
-		}
-		else if( current_friends.find(passed_in+"|") != string::npos ){ // This friend is the first entry in the friends list
+		if( current_friends.find(passed_in+"|") != string::npos ){ // This friend is the first entry in the friends list
 			current_friends.erase( current_friends.find(passed_in), passed_in.length()+1 );
 		}
 		else if( current_friends.find("|"+passed_in+"|") != string::npos ){ // This friend is a middle entry in the friends list
@@ -300,6 +297,9 @@ void handle_put(http_request message){
 		}
 		else if (current_friends.find("|"+passed_in) != string::npos ){ // This friend is the last entry in the friends list
 			current_friends.erase( current_friends.find(passed_in)-1, passed_in.length()+1 );
+		}
+		else if(current_friends.find(passed_in) != string::npos){ // This user only has one friend, and that friend is the friend being looked for
+			current_friends.erase( current_friends.find(passed_in), passed_in.length() );
 		}
 		
 		value props { build_json_object(vector<pair<string,string>> { make_pair(string("Friends"),string(current_friends))})};
