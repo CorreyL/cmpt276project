@@ -418,12 +418,14 @@ int signOn(const string& userId, const string& password){
     do_request(methods::POST,
     user_addr + sign_on + "/" + userId, value::object (vector<pair<string,value>>
                 {make_pair("Password", value::string(password))}))};
+    cout <<"Sign on result " << signOnResult.first << endl;
     return signOnResult.first;
 }
 
 //Helper function to sign off
 int signOff(const string& userId){
     pair<status_code,value> signOffResult {do_request(methods::POST, "http://localhost:34572/" + sign_off + "/" + userId)};
+    cout <<"Sign off result " << signOffResult.first << endl;
     return signOffResult.first;
 }
 
@@ -1765,40 +1767,46 @@ SUITE(USER_SERVER_OPS){
   }
 
   TEST_FIXTURE(UserFixture, friendOps){
-    //Sign On
+    //Using the get_partition_entity function instead of get friend list so one test is not dependant on another being successful
+    string friendEntryA = string(country_A) + ";" + string(name_A);
+    string friendEntryB = string(country_B) + ";" + string(name_B);
+    string friendEntryC = string(country_C) + ";" + string(name_C);
+
+    //Sign On A
     int signOnResult {signOn(string(UserFixture::userID_A), string(UserFixture::user_pwd_A))};
-    cout <<"Sign on result " << signOnResult << endl;
     CHECK_EQUAL(status_codes::OK, signOnResult);
+    bool findResult;
 
     //Ensure adding a friend works
-    string newFriendCountry = "USA";
-    string newFriendName = "Kitzmiller,Trevor";
-    int addResult = addFriend(UserFixture::userID_A, newFriendCountry, newFriendName);
+    int addResult = addFriend(UserFixture::userID_A, string(UserFixture::country_B), string(UserFixture::name_B));
     CHECK_EQUAL(status_codes::OK, addResult);
+    pair<status_code,value> getResult = get_partition_entity (addr, table, country_A, name_A);
+    findResult = (getResult.second["Friends"].as_string().find(friendEntryB) != string::npos); //Basically: From the string in the entitiy's properties paried with "Friends", is friendEntryB there?
+    CHECK_EQUAL(true, findResult);
 
-    //Add a second friend, shouldn't add another copy
-    addResult = addFriend(UserFixture::userID_A, newFriendCountry, newFriendName);
+    //Add the same friend again, shouldn't add another copy
+    addResult = addFriend(UserFixture::userID_A, string(UserFixture::country_B), string(UserFixture::name_B));
     CHECK_EQUAL(status_codes::OK, addResult);
-
-    //View Friends list (debugging)
-    pair<status_code,value> FLResult = ReadFriendList(string(UserFixture::userID_A));
-    cout << FLResult.first << " " << FLResult.second << endl;
+    pair<status_code,value> secondAddResult = get_partition_entity (addr, table, country_A, name_A);
+    CHECK_EQUAL(true, getResult.second["Friends"].as_string().length() == secondAddResult.second["Friends"].as_string().length()); //No new friends were added if these lengths are the same
 
     //Ensure removing friend works
-    int remResult = unFriend(UserFixture::userID_A, newFriendCountry, newFriendName);
+    int remResult = unFriend(UserFixture::userID_A, string(UserFixture::country_B), string(UserFixture::name_B));
     CHECK_EQUAL(status_codes::OK, remResult);
+    getResult = get_partition_entity (addr, table, country_A, name_A);
+    CHECK_EQUAL(true, getResult.second["Friends"].as_string().length() == 0);
 
     //Remove the same friend again, should just do nothing
-    remResult = unFriend(UserFixture::userID_A, newFriendCountry, newFriendName);
+    remResult = unFriend(UserFixture::userID_A, string(UserFixture::country_B), string(UserFixture::name_B));
     CHECK_EQUAL(status_codes::OK, remResult);
+    getResult = get_partition_entity (addr, table, country_A, name_A);
+    CHECK_EQUAL(true, getResult.second["Friends"].as_string().length() == 0);
 
-    //View Friends list (debugging)
-    FLResult = ReadFriendList(string(UserFixture::userID_A));
-    cout << FLResult.first << " " << FLResult.second << endl;
+    //Now, with muliple users
+    //Sign on B & C
 
-    //Sign off
+    //Sign off A
     int signOffResult {signOff(string(UserFixture::userID_A))};
-    cout <<"Sign off result " << signOffResult << endl;
     CHECK_EQUAL(status_codes::OK, signOffResult);
 		
   }
