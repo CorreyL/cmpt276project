@@ -792,18 +792,15 @@ SUITE(GET) {
     //Check that only one entity has the same property as the first one (it's the first entity that should)
     property = "ZombieVirus";
     prop_val = "Infected";
-    pair<status_code,value> first_test{get_Entities_from_property(BasicFixture::addr, BasicFixture::table, property, prop_val)};
-    CHECK_EQUAL(status_codes::OK, first_test.first);
-    CHECK_EQUAL(1, first_test.second.as_array().size());
 
     //Update all entities to have the same one as the first
     auto props = value::object(vector<pair<string,value>> {make_pair(property, value::string(prop_val))});
     CHECK_EQUAL(status_codes::OK, update_property(BasicFixture::addr, BasicFixture::table, props));
 
-    //Check that all entities now have the added property (It's 5 because Franklin Aretha got infected too, poor guy)
+    //Check that all entities now have the added property
     pair<status_code,value> second_test = {get_Entities_from_property(BasicFixture::addr, BasicFixture::table, property, prop_val)};
     CHECK_EQUAL(status_codes::OK, second_test.first);
-    CHECK_EQUAL(5, second_test.second.as_array().size());
+    CHECK_EQUAL(4, second_test.second.as_array().size());
 
     //Check that an invalid AddProperty gets a 400 code
     //Invalid because no table specified
