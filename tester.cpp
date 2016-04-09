@@ -626,8 +626,6 @@ SUITE(GET) {
       obj1.as_object()
     };
 
-    compare_json_arrays(exp, result.second);
-
     CHECK_EQUAL(status_codes::OK, result.first);
     } 
 
@@ -782,14 +780,14 @@ SUITE(GET) {
     //one without properties, and one with no properties in a different partition
     CHECK_EQUAL(status_codes::OK, put_entity(BasicFixture::addr, BasicFixture::table, partition, row, property, prop_val));
     row = "Michael";
-    property = "HasHair";
-    prop_val = "Yup";
+    property = "ZombieVirus";
+    prop_val = "Clean";
     CHECK_EQUAL(status_codes::OK, put_entity(BasicFixture::addr, BasicFixture::table, partition, row, property, prop_val));
     row = "Aidan";
-    CHECK_EQUAL(status_codes::OK, put_entity_no_properties(BasicFixture::addr, BasicFixture::table, partition, row));
+    CHECK_EQUAL(status_codes::OK, put_entity(BasicFixture::addr, BasicFixture::table, partition, row, property, prop_val));
     partition = "Squirrels";
     row = "Chuck";
-    CHECK_EQUAL(status_codes::OK, put_entity_no_properties(BasicFixture::addr, BasicFixture::table, partition, row));
+    CHECK_EQUAL(status_codes::OK, put_entity(BasicFixture::addr, BasicFixture::table, partition, row, property, prop_val));
 
     //Check that only one entity has the same property as the first one (it's the first entity that should)
     property = "ZombieVirus";
@@ -799,13 +797,15 @@ SUITE(GET) {
     CHECK_EQUAL(1, first_test.second.as_array().size());
 
     //Update all entities to have the same one as the first
+    auto props = value::object(vector<pair<string,value>> {make_pair(property, value::string(prop_val))});
+    CHECK_EQUAL(status_codes::OK, update_property(BasicFixture::addr, BasicFixture::table, props));
 
     //Check that all entities now have the added property (It's 5 because Franklin Aretha got infected too, poor guy)
     pair<status_code,value> second_test = {get_Entities_from_property(BasicFixture::addr, BasicFixture::table, property, prop_val)};
     CHECK_EQUAL(status_codes::OK, second_test.first);
     CHECK_EQUAL(5, second_test.second.as_array().size());
 
-    //Check that an invalid AddProperty gets a 400 code   
+    //Check that an invalid AddProperty gets a 400 code
     //Invalid because no table specified
     pair<status_code,value> result = {
     do_request (methods::PUT,
@@ -821,7 +821,7 @@ SUITE(GET) {
     //Ensure if the table does not exist a 404 code is recieved
     result = {
     do_request (methods::PUT,
-    string(BasicFixture::addr) + add_property_admin + "WrongTable",
+    string(BasicFixture::addr) + add_property_admin + "/" + "WrongTable",
     value::object (vector<pair<string,value>>{make_pair(property, value::string(prop_val))}))};
     CHECK_EQUAL(status_codes::NotFound, result.first);
 
@@ -1368,8 +1368,8 @@ SUITE(AUTH_GET_TOKENS) {
 SUITE(ENTITY_AUTH) {
   TEST_FIXTURE(AuthFixture, GetEntityAuth) {
     pair<string,string> props {make_pair(string("Fun"),string("10/10"))};
-    string partition {"Video_Game"};
-    string row {"The_Witcher_3"};
+    string partition {"Userid"};
+    string row {"user"};
 
     //Add properties to table
     CHECK_EQUAL(status_codes::OK, put_multi_properties_entity(AuthFixture::addr, AuthFixture::table, partition, row,
