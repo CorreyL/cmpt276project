@@ -780,8 +780,8 @@ SUITE(GET) {
     //one without properties, and one with no properties in a different partition
     CHECK_EQUAL(status_codes::OK, put_entity(BasicFixture::addr, BasicFixture::table, partition, row, property, prop_val));
     row = "Michael";
-    property = "ZombieVirus";
-    prop_val = "Clean";
+    property = "HasHair";
+    prop_val = "Yup";
     CHECK_EQUAL(status_codes::OK, put_entity(BasicFixture::addr, BasicFixture::table, partition, row, property, prop_val));
     row = "Aidan";
     CHECK_EQUAL(status_codes::OK, put_entity(BasicFixture::addr, BasicFixture::table, partition, row, property, prop_val));
@@ -792,15 +792,19 @@ SUITE(GET) {
     //Check that only one entity has the same property as the first one (it's the first entity that should)
     property = "ZombieVirus";
     prop_val = "Infected";
+    pair<status_code,value> first_test{get_Entities_from_property(BasicFixture::addr, BasicFixture::table, property, prop_val)};
+    CHECK_EQUAL(status_codes::OK, first_test.first);
+    CHECK_EQUAL(1, first_test.second.as_array().size());
 
     //Update all entities to have the same one as the first
     auto props = value::object(vector<pair<string,value>> {make_pair(property, value::string(prop_val))});
-    CHECK_EQUAL(status_codes::OK, update_property(BasicFixture::addr, BasicFixture::table, props));
+    first_test = do_request (methods::PUT, addr + add_property_admin + "/" + table, props);
+    CHECK_EQUAL(status_codes::OK, first_test.first);
 
-    //Check that all entities now have the added property
+    //Check that all entities now have the added property (It's 5 because Franklin Aretha got infected too, poor guy)
     pair<status_code,value> second_test = {get_Entities_from_property(BasicFixture::addr, BasicFixture::table, property, prop_val)};
     CHECK_EQUAL(status_codes::OK, second_test.first);
-    CHECK_EQUAL(4, second_test.second.as_array().size());
+    CHECK_EQUAL(5, second_test.second.as_array().size());
 
     //Check that an invalid AddProperty gets a 400 code
     //Invalid because no table specified
@@ -1365,8 +1369,8 @@ SUITE(AUTH_GET_TOKENS) {
 SUITE(ENTITY_AUTH) {
   TEST_FIXTURE(AuthFixture, GetEntityAuth) {
     pair<string,string> props {make_pair(string("Fun"),string("10/10"))};
-    string partition {"Userid"};
-    string row {"user"};
+    string partition {"Canada"};
+    string row {"Lim,Correy"};
 
     //Add properties to table
     CHECK_EQUAL(status_codes::OK, put_multi_properties_entity(AuthFixture::addr, AuthFixture::table, partition, row,
@@ -1449,8 +1453,8 @@ SUITE(ENTITY_AUTH) {
   }
   TEST_FIXTURE(AuthFixture, UpdateEntityAuth) {
     pair<string,value> props {make_pair(string("Fun"),value::string("10/10"))};
-    string partition {"Video_Game"};
-    string row {"The_Witcher_3"};
+    string partition {"Canada"};
+    string row {"Lim,Correy"};
 
     //Add properties to table
     CHECK_EQUAL(status_codes::OK, put_multi_properties_entity(AuthFixture::addr, AuthFixture::table, partition, row,
@@ -1524,8 +1528,8 @@ SUITE(ENTITY_AUTH) {
     })));
 
     //Ensure NotFound responses (404)
-    partition = "Video_Game";
-    row = "The_Witcher_3";
+    partition = "Canada";
+    row = "Lim,Correy";
     props = make_pair(string("Happy"),value::string("Sad"));
       //Try updating entity with invalid auth token
       CHECK_EQUAL(status_codes::NotFound, put_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, AuthFixture::partition, AuthFixture::row,
@@ -1727,10 +1731,7 @@ SUITE(USER_SERVER_OPS){
     CHECK_EQUAL(status_codes::NotFound, signOnResult);
 
     //Check to make sure that multiple sign ons are okay
-    string otherUserID = "user";
-    string otherUserPass = "user";
-
-    signOnResult = {signOn(otherUserID, otherUserPass)};
+    signOnResult = {signOn(userID_C, user_pwd_C)};
     CHECK_EQUAL(status_codes::OK, signOnResult);
 
     //Ensure that sign off works
@@ -1738,7 +1739,7 @@ SUITE(USER_SERVER_OPS){
     CHECK_EQUAL(status_codes::OK, signOffResult);
 
     //Sign off second sign in
-    signOffResult = {signOff(otherUserID)};
+    signOffResult = {signOff(userID_C)};
     CHECK_EQUAL(status_codes::OK, signOffResult);
 
     //Try getting friends list after sign off, expecting another forbidden
@@ -1827,7 +1828,6 @@ SUITE(USER_SERVER_OPS){
     CHECK_EQUAL(true, findResult);
 
     //Now, removing
-		dump_table_contents("DataTable");
     remResult = unFriend(UserFixture::userID_A, string(UserFixture::country_B), string(UserFixture::name_B));
     CHECK_EQUAL(status_codes::OK, remResult);
     getResult = get_partition_entity (addr, table, country_A, name_A);
@@ -1944,20 +1944,16 @@ SUITE(USER_SERVER_OPS){
     CHECK_EQUAL(status_codes::OK, signOnResult);
 
 		createFakeUser("test1", "test1", "USA", "Kitzmiller,Trevor"); // Creates an entity in both AuthTable and DataTable
-		
-    dump_table_contents("DataTable");
 
     string newFriendCountry = "USA";
     string newFriendName = "Kitzmiller,Trevor";
     int addResult = addFriend(UserFixture::userID_A, newFriendCountry, newFriendName);
     cout << endl;
-    dump_table_contents("DataTable");
 		
 		// User A updates own status with "Just_testing_things"
     do_request (methods::PUT,
                 user_addr + update_status + "/" + string(UserFixture::userID_A) + "/" + "Just_testing_things");
     cout << endl;
-    dump_table_contents("DataTable");
 		
 		// Ensure own status was updated
 		pair<status_code,value> own_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, UserFixture::country_A, UserFixture::name_A);
@@ -1970,7 +1966,6 @@ SUITE(USER_SERVER_OPS){
 		
 		// Ensure that status was placed in "Update":"" for DataTable entity for USA;Kitzmiller,Trevor
 		pair<status_code,value> friend_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, newFriendCountry, newFriendName);
-		dump_table_contents("DataTable");
 		string correct_update {"Just_testing_things\n"};
 		string passed_back_update {};
 		for (const auto& v : friend_update_status_result.second.as_object()){
