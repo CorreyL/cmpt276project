@@ -58,6 +58,7 @@ const string sign_off {"SignOff"};
 const string add_friend {"AddFriend"};
 const string un_friend {"UnFriend"};
 const string update_status {"UpdateStatus"};
+const string push_status {"PushStatus"};
 const string read_friend_list {"ReadFriendList"};
 
 // The two optional operations from Assignment 1
@@ -509,6 +510,13 @@ void createFakeUser(const string& userId, const string& user_pwd, const string& 
   */
 }
 
+//Helper function for push server
+pair<status_code,value> post_update(const string& addr, const string& country, const string& user, const string& status, const value& friendlist){
+  pair<status_code,value> result {
+    do_request(methods::POST,
+      addr + push_status + "/" + country + "/" + user + "/" + status, friendlist)};
+  return result;
+}
 /*
   Utility to get a token good for updating a specific entry
   from a specific table for one day.
@@ -2079,5 +2087,164 @@ SUITE(USER_SERVER_OPS){
     do_request(methods::CONNECT,
     user_addr + badCommand + "/" + userID_A)};
     CHECK_EQUAL(status_codes::MethodNotAllowed, result.first);
+  }
+}
+
+class PushFixture {
+public:
+  static constexpr const char* addr {"http://localhost:34568/"};
+  static constexpr const char* push_addr {"http://localhost:34574/"};
+  static constexpr const char* auth_table {"AuthTable"};
+  static constexpr const char* table {"DataTable"};
+  static constexpr const char* auth_table_partition {"Userid"};
+  static constexpr const char* auth_dataPartition {"DataPartition"};
+  static constexpr const char* auth_dataRow {"DataRow"};
+
+  static constexpr const char* userID {"Michael"};
+  static constexpr const char* user_pwd {"ReallyLazy"};
+  static constexpr const char* country {"Canada"};
+  static constexpr const char* name {"Trinh,Michael"};
+
+public:
+  PushFixture() {
+    //Ensure dataTable is created
+    int make_result {create_table(addr, table)};
+    cerr << "create result " << make_result << endl;
+    if (make_result != status_codes::Created && make_result != status_codes::Accepted) {
+      throw std::exception();
+    }
+    createFakeUser(userID, user_pwd, country, name);
+  }
+
+  ~PushFixture() {
+    int del_ent_result {delete_entity (addr, table, country, name)};
+    if (del_ent_result != status_codes::OK) {
+      throw std::exception();
+    }
+    del_ent_result = {delete_entity (addr, auth_table, auth_table_partition, userID)};
+    if (del_ent_result != status_codes::OK) {
+      throw std::exception();
+    }
+  }
+};
+
+SUITE(PUSH_SERVER_OPS){
+  TEST_FIXTURE(PushFixture, pushStatus){
+    // Try pushing w/ empty JSON body ({"":""})
+    int sign_on {signOn(string(PushFixture::userID), string(PushFixture::user_pwd))};
+    CHECK_EQUAL(status_codes::OK, sign_on);
+
+    string status {"Still_no_friends_to_hang_out"};
+    pair<status_code,value> result {post_update(PushFixture::push_addr, PushFixture::country, 
+      PushFixture::userID, status, 
+        value::object(vector<pair<string,value>>{
+          make_pair(string(""), value::string(""))}))};
+    CHECK_EQUAL(status_codes::OK, result.first);
+
+    // Add some friends and push again
+    string userID {"HelloKitty"};
+    string user_pwd {"Sanrio"};
+    string country {"Japan"};
+    string name {"Kitty,White"};
+    createFakeUser(userID, user_pwd, country, name);
+    int add_friend {addFriend(PushFixture::userID, country, name)};
+    CHECK_EQUAL(status_codes::OK, add_friend);
+
+    userID = "Gaben";
+    user_pwd = "PraiseLordGaben";
+    country = "USA";
+    name = "Newell,Gabe";
+    createFakeUser(userID, user_pwd, country, name);
+    add_friend = addFriend(PushFixture::userID, country, name);
+    CHECK_EQUAL(status_codes::OK, add_friend);
+
+    status = "Hey_I_got_friends";
+    pair<status_code,value> friendlist {ReadFriendList(PushFixture::userID)};
+    CHECK_EQUAL(status_codes::OK, friendlist.first);
+    result = post_update(PushFixture::push_addr, PushFixture::country, 
+      PushFixture::userID, status, friendlist.second);
+    CHECK_EQUAL(status_codes::OK, result.first);
+
+    // Unfriend and push again (friendlist should still have the un-friended friend added aka. ghost friend (T.T)7 )
+    int un_friend {unFriend(PushFixture::userID, country, name)};
+    CHECK_EQUAL(status_codes::OK, un_friend);
+
+    status = "At_least_I_still_have_you";
+    result = post_update(PushFixture::push_addr, PushFixture::country, 
+      PushFixture::userID, status, friendlist.second);
+    CHECK_EQUAL(status_codes::OK, result.first);
+
+    // Try w/ non-existent friend (friend not in DataTable)
+    string fakeName {"Ghost"};
+    string fakeCountry {"Vanished"};
+    country = "Japan";
+    name = "Kitty,White";
+
+    status = "Boo!";
+    result = post_update(PushFixture::push_addr, PushFixture::country, 
+      PushFixture::userID, status, 
+        value::object(vector<pair<string,value>>{
+          make_pair(country, value::string(name)),
+          make_pair(fakeCountry, value::string(fakeName))}));
+    CHECK_EQUAL(status_codes::OK, result.first);
+
+    // Try w/ no friends and signedOff
+    un_friend = unFriend(PushFixture::userID, country, name);
+    CHECK_EQUAL(status_codes::OK, un_friend);
+
+    status = "I_am_so_lonely";
+    friendlist = ReadFriendList(PushFixture::userID);
+
+    int sign_off {signOff(string(PushFixture::userID))};
+    CHECK_EQUAL(status_codes::OK, sign_off);
+
+    CHECK_EQUAL(status_codes::OK, friendlist.first);
+    result = post_update(PushFixture::push_addr, PushFixture::country, 
+      PushFixture::userID, status, friendlist.second);
+    CHECK_EQUAL(status_codes::OK, result.first);
+
+    // Try pushing update w/ no JSON body
+    // status = "Just_updated_with_cool_info\n";
+    // result = do_request(methods::POST,
+    //   PushFixture::push_addr + push_status + "/" + PushFixture::country + "/" + PushFixture::userID + "/" + status);
+    // CHECK_EQUAL(status_codes::OK, result.first);
+
+    // Check invalid HTTP methods
+    string command {"Nope"};
+    result = do_request(methods::PUT, push_addr + command + "/");
+    CHECK_EQUAL(status_codes::MethodNotAllowed, result.first);
+
+    result = do_request(methods::CONNECT, push_addr + command + "/");
+    CHECK_EQUAL(status_codes::MethodNotAllowed, result.first);
+
+    result = do_request(methods::HEAD, push_addr + command + "/");
+    CHECK_EQUAL(status_codes::MethodNotAllowed, result.first);
+
+    result = do_request(methods::GET, push_addr + command + "/");
+    CHECK_EQUAL(status_codes::MethodNotAllowed, result.first);
+
+    result = do_request(methods::DEL, push_addr + command + "/");
+    CHECK_EQUAL(status_codes::MethodNotAllowed, result.first);
+
+    // Check invalid POST command
+    result = do_request(methods::POST, push_addr + command + "/");
+    CHECK_EQUAL(status_codes::BadRequest, result.first);
+
+    // Cleanup tables
+    userID = "HelloKitty";
+    country = "Japan";
+    name = "Kitty,White";
+    int del_result {delete_entity (string(PushFixture::addr), string(PushFixture::auth_table), string(PushFixture::auth_table_partition), userID)};
+    CHECK_EQUAL(status_codes::OK, del_result);
+    del_result = delete_entity (string(PushFixture::addr), string(PushFixture::table), country, name);
+    CHECK_EQUAL(status_codes::OK, del_result);
+
+    userID = "Gaben";
+    country = "USA";
+    name = "Newell,Gabe";
+    del_result = delete_entity (string(PushFixture::addr), string(PushFixture::auth_table), string(PushFixture::auth_table_partition), userID);
+    CHECK_EQUAL(status_codes::OK, del_result);
+    del_result = delete_entity (string(PushFixture::addr), string(PushFixture::table), country, name);
+    CHECK_EQUAL(status_codes::OK, del_result);
   }
 }
