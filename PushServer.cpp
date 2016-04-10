@@ -115,16 +115,20 @@ void handle_post(http_request message) {
   string path {uri::decode(message.relative_uri().path())};
   cout << endl << "**** POST " << path << endl;
   auto paths = uri::split_path(path);
-	
+	// cout << "The size of paths is: " << paths.size() << endl;
 	if( paths[0] == push_status ){
 		unordered_map<string,string> stored_message = get_json_body(message);
-		if(stored_message.size() == 0){ // The user has no friends
+		unordered_map<string,string>::const_iterator got = stored_message.find("Friends");
+		string all_friends {};
+		if( got != stored_message.end() ){
+				all_friends = got->second;
+		}
+		if( (stored_message.size() == 0) || (got == stored_message.end()) || (all_friends == "") ){ // The user has no friends
 			message.reply(status_codes::OK);
 			return;
 		}
 		else{
-			string all_friends {};
-			unordered_map<string,string>::const_iterator got = stored_message.find("Friends");
+			got = stored_message.find("Friends");
 			if( got != stored_message.end() ){
 				all_friends = got->second;
 			}
