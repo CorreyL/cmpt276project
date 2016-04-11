@@ -2227,10 +2227,10 @@ SUITE(PUSH_SERVER_OPS){
     CHECK_EQUAL(status_codes::OK, result.first);
 
     // Try pushing update w/ no JSON body
-    // status = "Just_updated_with_cool_info\n";
-    // result = do_request(methods::POST,
-    //   PushFixture::push_addr + push_status + "/" + PushFixture::country + "/" + PushFixture::userID + "/" + status);
-    // CHECK_EQUAL(status_codes::OK, result.first);
+    status = "Just_updated_with_cool_info";
+    result = do_request(methods::POST,
+    PushFixture::push_addr + push_status + "/" + PushFixture::country + "/" + PushFixture::userID + "/" + status);
+    CHECK_EQUAL(status_codes::OK, result.first);
 
     // Check invalid HTTP methods
     string command {"Nope"};
