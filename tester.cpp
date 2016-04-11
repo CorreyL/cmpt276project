@@ -1200,6 +1200,29 @@ public:
     cerr << "user auth table insertion result " << user_result << endl;
     if (user_result != status_codes::OK)
       throw std::exception();
+		
+		// For GetUpdateData
+		// Give Partition: Userid / Row: user the properties DataPartition and DataRow
+		string DataPartition {"DataPartition"};
+		user_result = put_entity (addr,
+														 auth_table,
+														 auth_table_partition,
+														 userid,
+														 DataPartition,
+														 partition);
+		if (user_result != status_codes::OK) {
+      throw std::exception();
+    }
+		string DataRow {"DataRow"};
+		user_result = put_entity (addr,
+														 auth_table,
+														 auth_table_partition,
+														 userid,
+														 DataRow,
+														 row);
+		if (user_result != status_codes::OK) {
+      throw std::exception();
+    }
   }
 
   ~AuthFixture() {
@@ -1354,11 +1377,11 @@ SUITE(AUTH_GET_TOKENS) {
       get_update_data_function(AuthFixture::auth_addr, AuthFixture::userid, AuthFixture::user_pwd)};
     cout << "Token response " << token_res.first << endl;
 		// The partition and row are currently what UserID: user and Password: user currently have in their DataPartition and DataRow properties, respectively. This will need to be adjusted to be a proper unit test. (Ie. Tester puts in a UserID and Password into AuthTable, with a DataPartition and DataRow, and accordingly checks after calling GetUpdateData that it is returning the correct JSON object, with the correct entries for DataPartition and DataRow)
-		string partition = "Canada";
-		string row = "Lim,Correy";
 		
-		value json {build_json_object (vector<pair<string,string>> {make_pair("DataPartition", partition), make_pair("DataRow", row)})};
-		CHECK_EQUAL(token_res.first, status_codes::OK);
+		// value json {build_json_object (vector<pair<string,string>> {make_pair("DataPartition", AuthFixture::partition), make_pair("DataRow", AuthFixture::row)})};
+		assert(token_res.first == status_codes::OK);
+		string partition {AuthFixture::partition};
+		string row {AuthFixture::row};
 		
 		// value passed_back_json = token_res.second;
 		string passed_back_partition {};
