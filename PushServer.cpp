@@ -144,23 +144,24 @@ void handle_post(http_request message) {
 			string current_properties {};
 			string prop {"Updates"};
 			bool done {false};
-			
+			unordered_map<string,string> extract_json {};
 			while( !done ){
 				current_country = current_friend.substr( 0, current_friend.find(";") ); // Parse out the country from current_friend
 				current_name = current_friend.substr( current_friend.find(";")+1, current_friend.length() ); // Parse out the name from current_friend
 				
 				pair<status_code,value> get_result { get_partition_entity(basic_addr, DataTable, current_country, current_name) };
-				unordered_map<string,string> extract_json {};
-				for ( const auto& v : get_result.second.as_object() ){
-					if(v.first == "Updates") extract_json[v.first] = v.second.as_string();
-				}
-				unordered_map<string,string>::const_iterator got = extract_json.find("Updates");
-				if( got == extract_json.end() ){ // The user that we're trying to access does not have the property "Updates"
-					int update_result = put_entity(current_country, current_name, prop, paths[3]+"\n" );
-				}
-				else{
-					current_properties = got->second;
-					int update_result = put_entity(current_country, current_name, prop, current_properties+paths[3]+"\n" );
+				if( get_result.first == status_codes::OK ){ // If not OK, then the entity does not exist
+					for ( const auto& v : get_result.second.as_object() ){
+						if(v.first == "Updates") extract_json[v.first] = v.second.as_string();
+					}
+					unordered_map<string,string>::const_iterator got = extract_json.find("Updates");
+					if( got == extract_json.end() ){ // The user that we're trying to access does not have the property "Updates"
+						int update_result = put_entity(current_country, current_name, prop, paths[3]+"\n" );
+					}
+					else{
+						current_properties = got->second;
+						int update_result = put_entity(current_country, current_name, prop, current_properties+paths[3]+"\n" );
+					}
 				}
 				/*
 				cout << "Current Friend is: " << current_friend << endl;
