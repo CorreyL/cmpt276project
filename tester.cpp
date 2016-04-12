@@ -1911,7 +1911,7 @@ SUITE(USER_SERVER_OPS){
 		
 		// Check that ReadFriendList works for 1 friend
 		pair<status_code,value> friend_list_result = ReadFriendList(UserFixture::userID_A);
-		// value tester_friend_list {build_json_object (vector<pair<string,string>> {make_pair("Friends", "USA;Kitzmiller,Trevor")})};
+
 		string correct_friend_list {"USA;Kitzmiller,Trevor"};
 		
 		string passed_back_friend_list {};
@@ -1956,8 +1956,47 @@ SUITE(USER_SERVER_OPS){
 		correct_friend_list = "USA;Kitzmiller,Trevor|Canada;Quin,Tegan|Canada;Quin,Sara";
 		CHECK_EQUAL(correct_friend_list, passed_back_friend_list);
 		
-		// cout << "Third Friend Check: " << passed_back_friend_list << endl;
+		// Testing to ensure multiple users can do this operation at the same time
+		// Sign On User B
+		signOnResult = signOn(string(UserFixture::userID_B), string(UserFixture::user_pwd_B));
+    CHECK_EQUAL(status_codes::OK, signOnResult);
 		
+		// Add USA;Kitzmiller,Trevor as a friend for User B
+		addResult = addFriend(UserFixture::userID_B, first_friend_country, first_friend_name);
+    CHECK_EQUAL(status_codes::OK, addResult);
+		
+		// Check that ReadFriendList works for 1 friend
+		friend_list_result = ReadFriendList(UserFixture::userID_B);
+		
+		correct_friend_list = "USA;Kitzmiller,Trevor";
+		for (const auto& v : friend_list_result.second.as_object()){
+			if(v.first == "Friends") passed_back_friend_list = v.second.as_string(); 
+		}
+		CHECK_EQUAL(correct_friend_list, passed_back_friend_list);
+		
+		// Add Canada;Quin,Tegan as a friend for User B
+		addResult = addFriend(UserFixture::userID_B, second_friend_country, second_friend_name);
+    CHECK_EQUAL(status_codes::OK, addResult);
+		
+		// Check that ReadFriendList works for 2 friends
+		friend_list_result = ReadFriendList(UserFixture::userID_B);
+		
+		correct_friend_list = "USA;Kitzmiller,Trevor|Canada;Quin,Tegan";
+		for (const auto& v : friend_list_result.second.as_object()){
+			if(v.first == "Friends") passed_back_friend_list = v.second.as_string(); 
+		}
+		CHECK_EQUAL(correct_friend_list, passed_back_friend_list);
+		
+		// Check that User A can still make a ReadFriendList call with User B signed in and having done a few operations
+		friend_list_result = ReadFriendList(UserFixture::userID_A);
+		
+		for (const auto& v : friend_list_result.second.as_object()){
+			if(v.first == "Friends") passed_back_friend_list = v.second.as_string(); 
+		}
+		correct_friend_list = "USA;Kitzmiller,Trevor|Canada;Quin,Tegan|Canada;Quin,Sara";
+		CHECK_EQUAL(correct_friend_list, passed_back_friend_list);
+		
+		// Remove added friends for User A
 		int remResult = unFriend(UserFixture::userID_A, newFriendCountry, newFriendName);
     CHECK_EQUAL(status_codes::OK, remResult);
 		remResult = unFriend(UserFixture::userID_A, second_friend_country, second_friend_name);
@@ -1965,7 +2004,18 @@ SUITE(USER_SERVER_OPS){
 		remResult = unFriend(UserFixture::userID_A, first_friend_country, first_friend_name);
     CHECK_EQUAL(status_codes::OK, remResult);
 		
+		// Remove added friends for User B
+		remResult = unFriend(UserFixture::userID_B, newFriendCountry, newFriendName);
+    CHECK_EQUAL(status_codes::OK, remResult);
+		remResult = unFriend(UserFixture::userID_B, second_friend_country, second_friend_name);
+    CHECK_EQUAL(status_codes::OK, remResult);
+		
+		// Sign off User A
 		int signOffResult = {signOff(string(UserFixture::userID_A))};
+		CHECK_EQUAL(status_codes::OK, signOffResult);
+		
+		// Sign off User B
+		signOffResult = {signOff(string(UserFixture::userID_B))};
     CHECK_EQUAL(status_codes::OK, signOffResult);
 	}
 	
