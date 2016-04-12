@@ -2286,7 +2286,7 @@ SUITE(PUSH_SERVER_OPS){
       }
       CHECK_EQUAL(expected, return_res);
 
-    // Try w/ non-existent friend (friend not in DataTable)
+    // Try w/ 1 real friend and 1 non-existent friend (friend not in DataTable)
     string fakeName {"Ghost"};
     string fakeCountry {"Vanished"};
     country = "Japan";
@@ -2296,11 +2296,10 @@ SUITE(PUSH_SERVER_OPS){
     result = post_update(PushFixture::push_addr, PushFixture::country, 
       PushFixture::userID, status, 
         value::object(vector<pair<string,value>>{
-          make_pair(country, value::string(name)),
-          make_pair(fakeCountry, value::string(fakeName))}));
+          make_pair(string("Friends"), value::string(country + ";" + name + "|" + fakeCountry + ";" + fakeName))}));
     CHECK_EQUAL(status_codes::OK, result.first);
 
-      // Check friend
+      // Check real friend
       status_result = get_partition_entity (PushFixture::addr, PushFixture::table, country, name);
       expected = "Hey_I_got_friends\nAt_least_I_still_have_you\nBoo!\n";
       for (const auto& v : status_result.second.as_object()){
@@ -2352,7 +2351,7 @@ SUITE(PUSH_SERVER_OPS){
     result = post_update(PushFixture::push_addr, fakeCountry, 
       fakeUserID, status, 
         value::object(vector<pair<string,value>>{
-          make_pair(country, value::string(name))}));
+          make_pair(string("Friends"), value::string(country + ";" + name))}));
     CHECK_EQUAL(status_codes::OK, result.first);
 
       //Check if friend was updated
