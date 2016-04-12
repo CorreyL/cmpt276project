@@ -1480,10 +1480,8 @@ SUITE(ENTITY_AUTH) {
       result = do_request (methods::GET, string(AuthFixture::addr)
                           + read_entity_auth);
       CHECK_EQUAL(status_codes::BadRequest, result.first);
-
-    //Cleanup table
-    CHECK_EQUAL(status_codes::OK, delete_entity (AuthFixture::addr, AuthFixture::table, partition, row));
   }
+
   TEST_FIXTURE(AuthFixture, UpdateEntityAuth) {
     pair<string,value> props {make_pair(string(AuthFixture::property),value::string(AuthFixture::prop_val))};
     string partition {"USA"};
@@ -1543,7 +1541,7 @@ SUITE(ENTITY_AUTH) {
         make_pair("Cool",value::string("HeckYeah")),
         make_pair("Replay",value::string("Always"))
     })));
-    
+
     result = get_entity_auth(AuthFixture::addr, AuthFixture::table, token_res.second, partition, row);
     CHECK_EQUAL(status_codes::OK, result.first);
     expect_value = build_json_object (vector<pair<string,string>> {
@@ -1642,9 +1640,6 @@ SUITE(ENTITY_AUTH) {
       value::object (vector<pair<string,value>> {
         make_pair("Fun",value::string("No"))
     })));
-
-    //Cleanup table
-    CHECK_EQUAL(status_codes::OK, delete_entity (AuthFixture::addr, AuthFixture::table, partition, row));
   }
 }
 
