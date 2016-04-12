@@ -1200,27 +1200,27 @@ public:
     cerr << "user auth table insertion result " << user_result << endl;
     if (user_result != status_codes::OK)
       throw std::exception();
-		
-		// For GetUpdateData
-		// Give Partition: Userid / Row: user the properties DataPartition and DataRow
-		string DataPartition {"DataPartition"};
-		user_result = put_entity (addr,
-														 auth_table,
-														 auth_table_partition,
-														 userid,
-														 DataPartition,
-														 partition);
-		if (user_result != status_codes::OK) {
+    
+    // For GetUpdateData
+    // Give Partition: Userid / Row: user the properties DataPartition and DataRow
+    string DataPartition {"DataPartition"};
+    user_result = put_entity (addr,
+                             auth_table,
+                             auth_table_partition,
+                             userid,
+                             DataPartition,
+                             partition);
+    if (user_result != status_codes::OK) {
       throw std::exception();
     }
-		string DataRow {"DataRow"};
-		user_result = put_entity (addr,
-														 auth_table,
-														 auth_table_partition,
-														 userid,
-														 DataRow,
-														 row);
-		if (user_result != status_codes::OK) {
+    string DataRow {"DataRow"};
+    user_result = put_entity (addr,
+                             auth_table,
+                             auth_table_partition,
+                             userid,
+                             DataRow,
+                             row);
+    if (user_result != status_codes::OK) {
       throw std::exception();
     }
   }
@@ -1369,32 +1369,32 @@ SUITE(AUTH_GET_TOKENS) {
     CHECK_EQUAL (status_codes::OK, token_res.first);
     CHECK_EQUAL(true, token_res.second.find(updateTokenIdentifier) != std::string::npos); // ie) token contains the little string that identifies it as update
   }
-	TEST_FIXTURE(AuthFixture, GetUpdateData){
-		string validUser_ID {AuthFixture::userid};
-		string validUser_pwd {AuthFixture::user_pwd};
-		cout << "Requesting token, DataPartition and DataRow" << endl;
+  TEST_FIXTURE(AuthFixture, GetUpdateData){
+    string validUser_ID {AuthFixture::userid};
+    string validUser_pwd {AuthFixture::user_pwd};
+    cout << "Requesting token, DataPartition and DataRow" << endl;
     pair<status_code,value> token_res {
       get_update_data_function(AuthFixture::auth_addr, AuthFixture::userid, AuthFixture::user_pwd)};
     cout << "Token response " << token_res.first << endl;
-		// The partition and row are currently what UserID: user and Password: user currently have in their DataPartition and DataRow properties, respectively. This will need to be adjusted to be a proper unit test. (Ie. Tester puts in a UserID and Password into AuthTable, with a DataPartition and DataRow, and accordingly checks after calling GetUpdateData that it is returning the correct JSON object, with the correct entries for DataPartition and DataRow)
-		
-		// value json {build_json_object (vector<pair<string,string>> {make_pair("DataPartition", AuthFixture::partition), make_pair("DataRow", AuthFixture::row)})};
-		assert(token_res.first == status_codes::OK);
-		string partition {AuthFixture::partition};
-		string row {AuthFixture::row};
-		
-		// value passed_back_json = token_res.second;
-		string passed_back_partition {};
-		for (const auto& v : token_res.second.as_object()){
-			if(v.first == "DataPartition") passed_back_partition = v.second.as_string(); 
-		}
-		CHECK_EQUAL(partition, passed_back_partition);
-		string passed_back_row {};
-		for (const auto& v : token_res.second.as_object()){
-			if(v.first == "DataRow") passed_back_row = v.second.as_string(); 
-		}
-		CHECK_EQUAL(row, passed_back_row);
-	}
+    // The partition and row are currently what UserID: user and Password: user currently have in their DataPartition and DataRow properties, respectively. This will need to be adjusted to be a proper unit test. (Ie. Tester puts in a UserID and Password into AuthTable, with a DataPartition and DataRow, and accordingly checks after calling GetUpdateData that it is returning the correct JSON object, with the correct entries for DataPartition and DataRow)
+    
+    // value json {build_json_object (vector<pair<string,string>> {make_pair("DataPartition", AuthFixture::partition), make_pair("DataRow", AuthFixture::row)})};
+    assert(token_res.first == status_codes::OK);
+    string partition {AuthFixture::partition};
+    string row {AuthFixture::row};
+    
+    // value passed_back_json = token_res.second;
+    string passed_back_partition {};
+    for (const auto& v : token_res.second.as_object()){
+      if(v.first == "DataPartition") passed_back_partition = v.second.as_string(); 
+    }
+    CHECK_EQUAL(partition, passed_back_partition);
+    string passed_back_row {};
+    for (const auto& v : token_res.second.as_object()){
+      if(v.first == "DataRow") passed_back_row = v.second.as_string(); 
+    }
+    CHECK_EQUAL(row, passed_back_row);
+  }
 }
 
 SUITE(ENTITY_AUTH) {
@@ -1460,12 +1460,12 @@ SUITE(ENTITY_AUTH) {
 
     //Try reading entity with < 4 parameters
       //Missing table
-			//Note to marker: We've discovered that if the signature in the token contains the string %2F, then paths[] is constructed incorrectly, resulting in an inconsistent result of whether or not these tests pass. We've omitted this as a part of our submission as a result.
-			/*
+      //Note to marker: We've discovered that if the signature in the token contains the string %2F, then paths[] is constructed incorrectly, resulting in an inconsistent result of whether or not these tests pass. We've omitted this as a part of our submission as a result.
+      /*
       result = do_request (methods::GET, string(AuthFixture::addr)
                           + read_entity_auth + "/" + token_res.second + "/" + partition + "/" + row);
       CHECK_EQUAL(status_codes::BadRequest, result.first);
-			*/
+      */
       //Missing table + token
       result = do_request (methods::GET, string(AuthFixture::addr)
                           + read_entity_auth + "/" + partition + "/" + row);
@@ -1595,15 +1595,15 @@ SUITE(ENTITY_AUTH) {
     //Try updating entity with < 4 parameters
     props = make_pair("Try",value::string("Adding"));
       //Missing table
-			//Note to marker: We've discovered that if the signature in the token contains the string %2F, then paths[] is constructed incorrectly, resulting in an inconsistent result of whether or not these tests pass. We've omitted this as a part of our submission as a result.
-			/*
+      //Note to marker: We've discovered that if the signature in the token contains the string %2F, then paths[] is constructed incorrectly, resulting in an inconsistent result of whether or not these tests pass. We've omitted this as a part of our submission as a result.
+      /*
       result = do_request (methods::PUT, string(AuthFixture::addr)
                           + update_entity_auth + "/" + token_res.second + "/" + partition + "/" + row,
                           value::object (vector<pair<string,value>> {
                             make_pair(props.first, props.second)
                           }));
       CHECK_EQUAL(status_codes::BadRequest, result.first);
-			*/
+      */
       //Missing table + token
       result = do_request (methods::PUT, string(AuthFixture::addr)
                           + update_entity_auth + "/" + partition + "/" + row,
@@ -1866,7 +1866,7 @@ SUITE(USER_SERVER_OPS){
     getResult = get_partition_entity (addr, table, country_A, name_A);
     CHECK_EQUAL(true, getResult.second["Friends"].as_string() == friendEntryC); //Should now be just friend entry C (B removed)
     // cout << "Failure 1:" << getResult.second["Friends"].as_string() << endl;
-		// dump_table_contents("DataTable");
+    // dump_table_contents("DataTable");
 
     remResult = unFriend(UserFixture::userID_B, string(UserFixture::country_C), string(UserFixture::name_C));
     CHECK_EQUAL(status_codes::OK, remResult);
@@ -1883,7 +1883,7 @@ SUITE(USER_SERVER_OPS){
     getResult = get_partition_entity (addr, table, country_A, name_A);
     CHECK_EQUAL(true, getResult.second["Friends"].as_string().empty()); //Should now be empty
     // cout << "Failure 2:" << getResult.second["Friends"].as_string() << endl;
-		// dump_table_contents("DataTable");
+    // dump_table_contents("DataTable");
 
     //Sign off everyone
     int signOffResult {signOff(string(UserFixture::userID_A))};
@@ -1894,233 +1894,233 @@ SUITE(USER_SERVER_OPS){
     CHECK_EQUAL(status_codes::OK, signOffResult);
     
     
-		
+    
   }
 
   TEST_FIXTURE(UserFixture, getFriendList){
-		//Sign On
+    //Sign On
     int signOnResult {signOn(string(UserFixture::userID_A), string(UserFixture::user_pwd_A))};
     CHECK_EQUAL(status_codes::OK, signOnResult);
-		
-		// Ensure adding a friend works
+    
+    // Ensure adding a friend works
     string newFriendCountry = "USA";
     string newFriendName = "Kitzmiller,Trevor";
-		// For unfriending
-		string first_friend_country = newFriendCountry;
-		string first_friend_name = newFriendName;
+    // For unfriending
+    string first_friend_country = newFriendCountry;
+    string first_friend_name = newFriendName;
     int addResult = addFriend(UserFixture::userID_A, newFriendCountry, newFriendName);
     CHECK_EQUAL(status_codes::OK, addResult);
-		
-		// Check that ReadFriendList works for 1 friend
-		pair<status_code,value> friend_list_result = ReadFriendList(UserFixture::userID_A);
+    
+    // Check that ReadFriendList works for 1 friend
+    pair<status_code,value> friend_list_result = ReadFriendList(UserFixture::userID_A);
 
-		string correct_friend_list {"USA;Kitzmiller,Trevor"};
-		
-		string passed_back_friend_list {};
-		for (const auto& v : friend_list_result.second.as_object()){
-			if(v.first == "Friends") passed_back_friend_list = v.second.as_string(); 
-		}
-		CHECK_EQUAL(correct_friend_list, passed_back_friend_list);
-		
-		// cout << "First Friend Check: " << passed_back_friend_list << endl;
-		
-		// Adding a second friend
-		newFriendCountry = "Canada";
+    string correct_friend_list {"USA;Kitzmiller,Trevor"};
+    
+    string passed_back_friend_list {};
+    for (const auto& v : friend_list_result.second.as_object()){
+      if(v.first == "Friends") passed_back_friend_list = v.second.as_string(); 
+    }
+    CHECK_EQUAL(correct_friend_list, passed_back_friend_list);
+    
+    // cout << "First Friend Check: " << passed_back_friend_list << endl;
+    
+    // Adding a second friend
+    newFriendCountry = "Canada";
     newFriendName = "Quin,Tegan";
-		string second_friend_country = newFriendCountry;
-		string second_friend_name = newFriendName;
+    string second_friend_country = newFriendCountry;
+    string second_friend_name = newFriendName;
     addResult = addFriend(UserFixture::userID_A, newFriendCountry, newFriendName);
     CHECK_EQUAL(status_codes::OK, addResult);
-		
-		// Check that ReadFriendList works for 2 friends
-		friend_list_result = ReadFriendList(UserFixture::userID_A);
-		
-		for (const auto& v : friend_list_result.second.as_object()){
-			if(v.first == "Friends") passed_back_friend_list = v.second.as_string(); 
-		}
-		correct_friend_list = "USA;Kitzmiller,Trevor|Canada;Quin,Tegan";
-		CHECK_EQUAL(correct_friend_list, passed_back_friend_list);
-		
-		// cout << "Second Friend Check: " << passed_back_friend_list << endl;
-		
-		// Adding a third friend
-		newFriendCountry = "Canada";
+    
+    // Check that ReadFriendList works for 2 friends
+    friend_list_result = ReadFriendList(UserFixture::userID_A);
+    
+    for (const auto& v : friend_list_result.second.as_object()){
+      if(v.first == "Friends") passed_back_friend_list = v.second.as_string(); 
+    }
+    correct_friend_list = "USA;Kitzmiller,Trevor|Canada;Quin,Tegan";
+    CHECK_EQUAL(correct_friend_list, passed_back_friend_list);
+    
+    // cout << "Second Friend Check: " << passed_back_friend_list << endl;
+    
+    // Adding a third friend
+    newFriendCountry = "Canada";
     newFriendName = "Quin,Sara";
     addResult = addFriend(UserFixture::userID_A, newFriendCountry, newFriendName);
     CHECK_EQUAL(status_codes::OK, addResult);
-		
-		// Check that ReadFriendList works for 3 friends
-		friend_list_result = ReadFriendList(UserFixture::userID_A);
-		
-		for (const auto& v : friend_list_result.second.as_object()){
-			if(v.first == "Friends") passed_back_friend_list = v.second.as_string(); 
-		}
-		correct_friend_list = "USA;Kitzmiller,Trevor|Canada;Quin,Tegan|Canada;Quin,Sara";
-		CHECK_EQUAL(correct_friend_list, passed_back_friend_list);
-		
-		// Testing to ensure multiple users can do this operation at the same time
-		// Sign On User B
-		signOnResult = signOn(string(UserFixture::userID_B), string(UserFixture::user_pwd_B));
+    
+    // Check that ReadFriendList works for 3 friends
+    friend_list_result = ReadFriendList(UserFixture::userID_A);
+    
+    for (const auto& v : friend_list_result.second.as_object()){
+      if(v.first == "Friends") passed_back_friend_list = v.second.as_string(); 
+    }
+    correct_friend_list = "USA;Kitzmiller,Trevor|Canada;Quin,Tegan|Canada;Quin,Sara";
+    CHECK_EQUAL(correct_friend_list, passed_back_friend_list);
+    
+    // Testing to ensure multiple users can do this operation at the same time
+    // Sign On User B
+    signOnResult = signOn(string(UserFixture::userID_B), string(UserFixture::user_pwd_B));
     CHECK_EQUAL(status_codes::OK, signOnResult);
-		
-		// Add USA;Kitzmiller,Trevor as a friend for User B
-		addResult = addFriend(UserFixture::userID_B, first_friend_country, first_friend_name);
+    
+    // Add USA;Kitzmiller,Trevor as a friend for User B
+    addResult = addFriend(UserFixture::userID_B, first_friend_country, first_friend_name);
     CHECK_EQUAL(status_codes::OK, addResult);
-		
-		// Check that ReadFriendList works for 1 friend
-		friend_list_result = ReadFriendList(UserFixture::userID_B);
-		
-		correct_friend_list = "USA;Kitzmiller,Trevor";
-		for (const auto& v : friend_list_result.second.as_object()){
-			if(v.first == "Friends") passed_back_friend_list = v.second.as_string(); 
-		}
-		CHECK_EQUAL(correct_friend_list, passed_back_friend_list);
-		
-		// Add Canada;Quin,Tegan as a friend for User B
-		addResult = addFriend(UserFixture::userID_B, second_friend_country, second_friend_name);
+    
+    // Check that ReadFriendList works for 1 friend
+    friend_list_result = ReadFriendList(UserFixture::userID_B);
+    
+    correct_friend_list = "USA;Kitzmiller,Trevor";
+    for (const auto& v : friend_list_result.second.as_object()){
+      if(v.first == "Friends") passed_back_friend_list = v.second.as_string(); 
+    }
+    CHECK_EQUAL(correct_friend_list, passed_back_friend_list);
+    
+    // Add Canada;Quin,Tegan as a friend for User B
+    addResult = addFriend(UserFixture::userID_B, second_friend_country, second_friend_name);
     CHECK_EQUAL(status_codes::OK, addResult);
-		
-		// Check that ReadFriendList works for 2 friends
-		friend_list_result = ReadFriendList(UserFixture::userID_B);
-		
-		correct_friend_list = "USA;Kitzmiller,Trevor|Canada;Quin,Tegan";
-		for (const auto& v : friend_list_result.second.as_object()){
-			if(v.first == "Friends") passed_back_friend_list = v.second.as_string(); 
-		}
-		CHECK_EQUAL(correct_friend_list, passed_back_friend_list);
-		
-		// Check that User A can still make a ReadFriendList call with User B signed in and having done a few operations
-		friend_list_result = ReadFriendList(UserFixture::userID_A);
-		
-		for (const auto& v : friend_list_result.second.as_object()){
-			if(v.first == "Friends") passed_back_friend_list = v.second.as_string(); 
-		}
-		correct_friend_list = "USA;Kitzmiller,Trevor|Canada;Quin,Tegan|Canada;Quin,Sara";
-		CHECK_EQUAL(correct_friend_list, passed_back_friend_list);
-		
-		// Remove added friends for User A
-		int remResult = unFriend(UserFixture::userID_A, newFriendCountry, newFriendName);
+    
+    // Check that ReadFriendList works for 2 friends
+    friend_list_result = ReadFriendList(UserFixture::userID_B);
+    
+    correct_friend_list = "USA;Kitzmiller,Trevor|Canada;Quin,Tegan";
+    for (const auto& v : friend_list_result.second.as_object()){
+      if(v.first == "Friends") passed_back_friend_list = v.second.as_string(); 
+    }
+    CHECK_EQUAL(correct_friend_list, passed_back_friend_list);
+    
+    // Check that User A can still make a ReadFriendList call with User B signed in and having done a few operations
+    friend_list_result = ReadFriendList(UserFixture::userID_A);
+    
+    for (const auto& v : friend_list_result.second.as_object()){
+      if(v.first == "Friends") passed_back_friend_list = v.second.as_string(); 
+    }
+    correct_friend_list = "USA;Kitzmiller,Trevor|Canada;Quin,Tegan|Canada;Quin,Sara";
+    CHECK_EQUAL(correct_friend_list, passed_back_friend_list);
+    
+    // Remove added friends for User A
+    int remResult = unFriend(UserFixture::userID_A, newFriendCountry, newFriendName);
     CHECK_EQUAL(status_codes::OK, remResult);
-		remResult = unFriend(UserFixture::userID_A, second_friend_country, second_friend_name);
+    remResult = unFriend(UserFixture::userID_A, second_friend_country, second_friend_name);
     CHECK_EQUAL(status_codes::OK, remResult);
-		remResult = unFriend(UserFixture::userID_A, first_friend_country, first_friend_name);
+    remResult = unFriend(UserFixture::userID_A, first_friend_country, first_friend_name);
     CHECK_EQUAL(status_codes::OK, remResult);
-		
-		// Remove added friends for User B
-		remResult = unFriend(UserFixture::userID_B, newFriendCountry, newFriendName);
+    
+    // Remove added friends for User B
+    remResult = unFriend(UserFixture::userID_B, newFriendCountry, newFriendName);
     CHECK_EQUAL(status_codes::OK, remResult);
-		remResult = unFriend(UserFixture::userID_B, second_friend_country, second_friend_name);
+    remResult = unFriend(UserFixture::userID_B, second_friend_country, second_friend_name);
     CHECK_EQUAL(status_codes::OK, remResult);
-		
-		// Sign off User A
-		int signOffResult = {signOff(string(UserFixture::userID_A))};
-		CHECK_EQUAL(status_codes::OK, signOffResult);
-		
-		// Sign off User B
-		signOffResult = {signOff(string(UserFixture::userID_B))};
+    
+    // Sign off User A
+    int signOffResult = {signOff(string(UserFixture::userID_A))};
     CHECK_EQUAL(status_codes::OK, signOffResult);
-	}
-	
+    
+    // Sign off User B
+    signOffResult = {signOff(string(UserFixture::userID_B))};
+    CHECK_EQUAL(status_codes::OK, signOffResult);
+  }
+  
   TEST_FIXTURE(UserFixture, updateStatus){
     //Sign On
     int signOnResult {signOn(string(UserFixture::userID_A), string(UserFixture::user_pwd_A))};
     CHECK_EQUAL(status_codes::OK, signOnResult);
 
-		createFakeUser("test1", "test1", "USA", "Kitzmiller,Trevor"); // Creates an entity in both AuthTable and DataTable
+    createFakeUser("test1", "test1", "USA", "Kitzmiller,Trevor"); // Creates an entity in both AuthTable and DataTable
 
     string newFriendCountry = "USA";
     string newFriendName = "Kitzmiller,Trevor";
     int addResult = addFriend(UserFixture::userID_A, newFriendCountry, newFriendName);
     cout << endl;
-		
-		// User A updates own status with "Just_testing_things"
+    
+    // User A updates own status with "Just_testing_things"
     do_request (methods::PUT,
                 user_addr + update_status + "/" + string(UserFixture::userID_A) + "/" + "Just_testing_things");
     cout << endl;
-		
-		// Ensure own status was updated
-		pair<status_code,value> own_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, UserFixture::country_A, UserFixture::name_A);
-		string correct_status {"Just_testing_things"};
-		string passed_back_status {};
-		for (const auto& v : own_update_status_result.second.as_object()){
-			if(v.first == "Status") passed_back_status = v.second.as_string(); 
-		}
-		CHECK_EQUAL(correct_status, passed_back_status);
-		
-		// Ensure that status was placed in "Update":"" for DataTable entity for USA;Kitzmiller,Trevor
-		pair<status_code,value> friend_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, newFriendCountry, newFriendName);
-		string correct_update {"Just_testing_things\n"};
-		string passed_back_update {};
-		for (const auto& v : friend_update_status_result.second.as_object()){
-			if(v.first == "Updates") passed_back_update = v.second.as_string(); 
-		}
-		CHECK_EQUAL(correct_update, passed_back_update);
-		
-		// Begin test for two simultaneous users
-		signOnResult = signOn(string(UserFixture::userID_B), string(UserFixture::user_pwd_B));
+    
+    // Ensure own status was updated
+    pair<status_code,value> own_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, UserFixture::country_A, UserFixture::name_A);
+    string correct_status {"Just_testing_things"};
+    string passed_back_status {};
+    for (const auto& v : own_update_status_result.second.as_object()){
+      if(v.first == "Status") passed_back_status = v.second.as_string(); 
+    }
+    CHECK_EQUAL(correct_status, passed_back_status);
+    
+    // Ensure that status was placed in "Update":"" for DataTable entity for USA;Kitzmiller,Trevor
+    pair<status_code,value> friend_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, newFriendCountry, newFriendName);
+    string correct_update {"Just_testing_things\n"};
+    string passed_back_update {};
+    for (const auto& v : friend_update_status_result.second.as_object()){
+      if(v.first == "Updates") passed_back_update = v.second.as_string(); 
+    }
+    CHECK_EQUAL(correct_update, passed_back_update);
+    
+    // Begin test for two simultaneous users
+    signOnResult = signOn(string(UserFixture::userID_B), string(UserFixture::user_pwd_B));
     CHECK_EQUAL(status_codes::OK, signOnResult);
-		
-		// User B adds User A to their list of friends
-		addResult = addFriend(UserFixture::userID_B, UserFixture::country_A, UserFixture::name_A);
-		// User A adds User B to their list of friends
-		addResult = addFriend(UserFixture::userID_A, UserFixture::country_B, UserFixture::name_B);
-		
-		// User A updates their status again
-		do_request (methods::PUT, user_addr + update_status + "/" + string(UserFixture::userID_A) + "/" + "Cannot_wait_for_finals_to_be_over");
-		
-		// Ensure own status was updated
-		own_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, UserFixture::country_A, UserFixture::name_A);
-		correct_status = "Cannot_wait_for_finals_to_be_over";
-		for (const auto& v : own_update_status_result.second.as_object()){
-			if(v.first == "Status") passed_back_status = v.second.as_string(); 
-		}
-		CHECK_EQUAL(correct_status, passed_back_status);
-		
-		// User A's status update should appear in User B and friend USA;Kitzmiller,Trevor under "Updates"
-		// Checking USA;Kitzmiller,Trevor first (should also have previous Status Update from User A)
-		friend_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, newFriendCountry, newFriendName);
-		correct_update = "Just_testing_things\nCannot_wait_for_finals_to_be_over\n";
-		for (const auto& v : friend_update_status_result.second.as_object()){
-			if(v.first == "Updates") passed_back_update = v.second.as_string(); 
-		}
-		CHECK_EQUAL(correct_update, passed_back_update);
-		
-		// Checking User B
-		friend_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, UserFixture::country_B, UserFixture::name_B);
-		correct_update = "Cannot_wait_for_finals_to_be_over\n";
-		for (const auto& v : friend_update_status_result.second.as_object()){
-			if(v.first == "Updates") passed_back_update = v.second.as_string();
-		}
-		CHECK_EQUAL(correct_update, passed_back_update);
-		
-		// Now User B updates their status
-		do_request (methods::PUT, user_addr + update_status + "/" + string(UserFixture::userID_B) + "/" + "Dark_Souls_3_comes_out_around_finals_whyyyyyy");
-		
-		// Ensure own status was updated
-		own_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, UserFixture::country_B, UserFixture::name_B);
-		correct_status = "Dark_Souls_3_comes_out_around_finals_whyyyyyy";
-		for (const auto& v : own_update_status_result.second.as_object()){
-			if(v.first == "Status") passed_back_status = v.second.as_string(); 
-		}
-		CHECK_EQUAL(correct_status, passed_back_status);
-		
-		// This should appear in User A
-		// Checking User A
-		friend_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, UserFixture::country_A, UserFixture::name_A);
-		correct_update = "Dark_Souls_3_comes_out_around_finals_whyyyyyy\n";
-		for (const auto& v : friend_update_status_result.second.as_object()){
-			if(v.first == "Updates") passed_back_update = v.second.as_string();
-		}
-		CHECK_EQUAL(correct_update, passed_back_update);
-		
-		// Delete USA;Kitzmiller,Trevor from DataTable
-		int delete_result = delete_entity (UserFixture::addr, UserFixture::table, newFriendCountry, newFriendName);
-		CHECK_EQUAL(status_codes::OK, delete_result);
-		
-		// Delete USA;Kitzmiller,Trevor from AuthTable
-		delete_result = delete_entity (UserFixture::addr, UserFixture::auth_table, "Userid", "test1");
-		CHECK_EQUAL(status_codes::OK, delete_result);
-		
+    
+    // User B adds User A to their list of friends
+    addResult = addFriend(UserFixture::userID_B, UserFixture::country_A, UserFixture::name_A);
+    // User A adds User B to their list of friends
+    addResult = addFriend(UserFixture::userID_A, UserFixture::country_B, UserFixture::name_B);
+    
+    // User A updates their status again
+    do_request (methods::PUT, user_addr + update_status + "/" + string(UserFixture::userID_A) + "/" + "Cannot_wait_for_finals_to_be_over");
+    
+    // Ensure own status was updated
+    own_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, UserFixture::country_A, UserFixture::name_A);
+    correct_status = "Cannot_wait_for_finals_to_be_over";
+    for (const auto& v : own_update_status_result.second.as_object()){
+      if(v.first == "Status") passed_back_status = v.second.as_string(); 
+    }
+    CHECK_EQUAL(correct_status, passed_back_status);
+    
+    // User A's status update should appear in User B and friend USA;Kitzmiller,Trevor under "Updates"
+    // Checking USA;Kitzmiller,Trevor first (should also have previous Status Update from User A)
+    friend_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, newFriendCountry, newFriendName);
+    correct_update = "Just_testing_things\nCannot_wait_for_finals_to_be_over\n";
+    for (const auto& v : friend_update_status_result.second.as_object()){
+      if(v.first == "Updates") passed_back_update = v.second.as_string(); 
+    }
+    CHECK_EQUAL(correct_update, passed_back_update);
+    
+    // Checking User B
+    friend_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, UserFixture::country_B, UserFixture::name_B);
+    correct_update = "Cannot_wait_for_finals_to_be_over\n";
+    for (const auto& v : friend_update_status_result.second.as_object()){
+      if(v.first == "Updates") passed_back_update = v.second.as_string();
+    }
+    CHECK_EQUAL(correct_update, passed_back_update);
+    
+    // Now User B updates their status
+    do_request (methods::PUT, user_addr + update_status + "/" + string(UserFixture::userID_B) + "/" + "Dark_Souls_3_comes_out_around_finals_whyyyyyy");
+    
+    // Ensure own status was updated
+    own_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, UserFixture::country_B, UserFixture::name_B);
+    correct_status = "Dark_Souls_3_comes_out_around_finals_whyyyyyy";
+    for (const auto& v : own_update_status_result.second.as_object()){
+      if(v.first == "Status") passed_back_status = v.second.as_string(); 
+    }
+    CHECK_EQUAL(correct_status, passed_back_status);
+    
+    // This should appear in User A
+    // Checking User A
+    friend_update_status_result = get_partition_entity (UserFixture::addr, UserFixture::table, UserFixture::country_A, UserFixture::name_A);
+    correct_update = "Dark_Souls_3_comes_out_around_finals_whyyyyyy\n";
+    for (const auto& v : friend_update_status_result.second.as_object()){
+      if(v.first == "Updates") passed_back_update = v.second.as_string();
+    }
+    CHECK_EQUAL(correct_update, passed_back_update);
+    
+    // Delete USA;Kitzmiller,Trevor from DataTable
+    int delete_result = delete_entity (UserFixture::addr, UserFixture::table, newFriendCountry, newFriendName);
+    CHECK_EQUAL(status_codes::OK, delete_result);
+    
+    // Delete USA;Kitzmiller,Trevor from AuthTable
+    delete_result = delete_entity (UserFixture::addr, UserFixture::auth_table, "Userid", "test1");
+    CHECK_EQUAL(status_codes::OK, delete_result);
+    
     //Sign off
     int signOffResult {signOff(string(UserFixture::userID_A))};
     CHECK_EQUAL(status_codes::OK, signOffResult);
@@ -2300,7 +2300,7 @@ SUITE(PUSH_SERVER_OPS){
           make_pair(fakeCountry, value::string(fakeName))}));
     CHECK_EQUAL(status_codes::OK, result.first);
 
-      // Check friends
+      // Check friend
       status_result = get_partition_entity (PushFixture::addr, PushFixture::table, country, name);
       expected = "Hey_I_got_friends\nAt_least_I_still_have_you\nBoo!\n";
       for (const auto& v : status_result.second.as_object()){
