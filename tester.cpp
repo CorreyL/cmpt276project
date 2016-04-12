@@ -2245,7 +2245,26 @@ SUITE(PUSH_SERVER_OPS){
       PushFixture::userID, status, friendlist.second);
     CHECK_EQUAL(status_codes::OK, result.first);
 
+      // Check if friends recieved update
+      pair<status_code,value> status_result = get_partition_entity (PushFixture::addr, PushFixture::table, country, name);
+      string expected {"Hey_I_got_friends\n"};
+      string return_res {};
+      for (const auto& v : status_result.second.as_object()){
+        if(v.first == "Updates") return_res = v.second.as_string(); 
+      }
+      CHECK_EQUAL(expected, return_res);
+
+      country = "Japan";
+      name = "Kitty,White";
+      status_result = get_partition_entity (PushFixture::addr, PushFixture::table, country, name);
+      for (const auto& v : status_result.second.as_object()){
+        if(v.first == "Updates") return_res = v.second.as_string(); 
+      }
+      CHECK_EQUAL(expected, return_res);
+
     // Unfriend and push again (friendlist should still have the un-friended friend added aka. ghost friend (T.T)7 )
+    country = "USA";
+    name = "Newell,Gabe";
     int un_friend {unFriend(PushFixture::userID, country, name)};
     CHECK_EQUAL(status_codes::OK, un_friend);
 
@@ -2253,6 +2272,24 @@ SUITE(PUSH_SERVER_OPS){
     result = post_update(PushFixture::push_addr, PushFixture::country, 
       PushFixture::userID, status, friendlist.second);
     CHECK_EQUAL(status_codes::OK, result.first);
+
+      // Check friends
+      country = "Japan";
+      name = "Kitty,White";
+      status_result = get_partition_entity (PushFixture::addr, PushFixture::table, country, name);
+      expected = "Hey_I_got_friends\nAt_least_I_still_have_you\n";
+      for (const auto& v : status_result.second.as_object()){
+        if(v.first == "Updates") return_res = v.second.as_string(); 
+      }
+      CHECK_EQUAL(expected, return_res);
+
+      country = "USA";
+      name = "Newell,Gabe";
+      status_result = get_partition_entity (PushFixture::addr, PushFixture::table, country, name);
+      for (const auto& v : status_result.second.as_object()){
+        if(v.first == "Updates") return_res = v.second.as_string(); 
+      }
+      CHECK_EQUAL(expected, return_res);
 
     // Try w/ non-existent friend (friend not in DataTable)
     string fakeName {"Ghost"};
@@ -2267,6 +2304,14 @@ SUITE(PUSH_SERVER_OPS){
           make_pair(country, value::string(name)),
           make_pair(fakeCountry, value::string(fakeName))}));
     CHECK_EQUAL(status_codes::OK, result.first);
+
+      // Check friends
+      status_result = get_partition_entity (PushFixture::addr, PushFixture::table, country, name);
+      expected = "Hey_I_got_friends\nAt_least_I_still_have_you\nBoo!\n";
+      for (const auto& v : status_result.second.as_object()){
+        if(v.first == "Updates") return_res = v.second.as_string(); 
+      }
+      CHECK_EQUAL(expected, return_res);
 
     // Try w/ no friends and signedOff
     un_friend = unFriend(PushFixture::userID, country, name);
@@ -2283,11 +2328,45 @@ SUITE(PUSH_SERVER_OPS){
       PushFixture::userID, status, friendlist.second);
     CHECK_EQUAL(status_codes::OK, result.first);
 
+      // Check if freinds updates was updated (should not have been changed)
+      status_result = get_partition_entity (PushFixture::addr, PushFixture::table, country, name);
+      expected = "Hey_I_got_friends\nAt_least_I_still_have_you\nBoo!\n";
+      for (const auto& v : status_result.second.as_object()){
+        if(v.first == "Updates") return_res = v.second.as_string(); 
+      }
+      CHECK_EQUAL(expected, return_res);
+
+      country = "USA";
+      name = "Newell,Gabe";
+      expected = "Hey_I_got_friends\nAt_least_I_still_have_you\n";
+      status_result = get_partition_entity (PushFixture::addr, PushFixture::table, country, name);
+      for (const auto& v : status_result.second.as_object()){
+        if(v.first == "Updates") return_res = v.second.as_string(); 
+      }
+      CHECK_EQUAL(expected, return_res);
+
     // Try pushing update w/ no JSON body
     status = "Just_updated_with_cool_info";
     result = do_request(methods::POST,
     PushFixture::push_addr + push_status + "/" + PushFixture::country + "/" + PushFixture::userID + "/" + status);
     CHECK_EQUAL(status_codes::OK, result.first);
+
+    // Try pushing with non-existent user
+    string fakeUserID {"SpookyGhost"};
+    status = "Surprise_attack_failed";
+    result = post_update(PushFixture::push_addr, fakeCountry, 
+      fakeUserID, status, 
+        value::object(vector<pair<string,value>>{
+          make_pair(country, value::string(name))}));
+    CHECK_EQUAL(status_codes::OK, result.first);
+
+      //Check if friend was updated
+      status_result = get_partition_entity (PushFixture::addr, PushFixture::table, country, name);
+      expected = "Hey_I_got_friends\nAt_least_I_still_have_you\nSurprise_attack_failed\n";
+      for (const auto& v : status_result.second.as_object()){
+        if(v.first == "Updates") return_res = v.second.as_string(); 
+      }
+      CHECK_EQUAL(expected, return_res);
 
     // Check invalid HTTP methods
     string command {"Nope"};
