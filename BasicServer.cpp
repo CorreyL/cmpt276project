@@ -67,6 +67,9 @@ using prop_vals_t = vector<pair<string,value>>;
 
 constexpr const char* def_url = "http://localhost:34568";
 
+/*
+	URI Commands stored inside variables
+*/
 const string create_table {"CreateTableAdmin"};
 const string delete_table {"DeleteTableAdmin"};
 const string update_entity_admin {"UpdateEntityAdmin"};
@@ -77,16 +80,15 @@ const string update_entity_auth {"UpdateEntityAuth"};
 const string add_property_admin {"AddPropertyAdmin"};
 const string update_property_admin {"UpdatePropertyAdmin"};
 
-
 /*
   Cache of opened tables
- */
+*/
 TableCache table_cache {};
 
 /*
   Convert properties represented in Azure Storage type
   to prop_vals_t type.
- */
+*/
 prop_vals_t get_properties (const table_entity::properties_type& properties, prop_vals_t values = prop_vals_t {}) {
   for (const auto v : properties) {
     if (v.second.property_type() == edm_type::string) {
@@ -118,7 +120,8 @@ prop_vals_t get_properties (const table_entity::properties_type& properties, pro
   Return true if an HTTP request has a JSON body
 
   This routine can be called multiple times on the same message.
- */
+*/
+
 bool has_json_body (http_request message) {
   return message.headers()["Content-type"] == "application/json";
 }
@@ -136,7 +139,7 @@ bool has_json_body (http_request message) {
   Note that all types of JSON values are returned as strings.
   Use C++ conversion utilities to convert to numbers or dates
   as necessary.
- */
+*/
 unordered_map<string,string> get_json_body(http_request message) {  
   unordered_map<string,string> results {};
   const http_headers& headers {message.headers()};
@@ -157,10 +160,10 @@ unordered_map<string,string> get_json_body(http_request message) {
   if (json.is_object()) {
     for (const auto& v : json.as_object()) {
       if (v.second.is_string()) {
-	results[v.first] = v.second.as_string();
+				results[v.first] = v.second.as_string();
       }
       else {
-	results[v.first] = v.second.serialize();
+				results[v.first] = v.second.serialize();
       }
     }
   }
@@ -172,7 +175,7 @@ unordered_map<string,string> get_json_body(http_request message) {
 
   GET is the only request that has no command. All
   operands specify the value(s) to be retrieved.
- */
+*/
 void handle_get(http_request message) {
   string path {uri::decode(message.relative_uri().path())};
   cout << endl << "**** GET " << path << endl;
@@ -183,24 +186,25 @@ void handle_get(http_request message) {
     return;
   }
 	
+	// ReadEntityAuth requires 0) ReadEntityAuth Command 1) Table Name, 2) Token, 3) Partition and 4) Row
   if(paths[0] == read_entity_auth){
   	if(paths.size() < 5){
   		message.reply( status_codes::BadRequest);
   		return;
   	}
   }
-
+	
+	// Check that the table passed in exists in Storage Layer
   cloud_table table {table_cache.lookup_table(paths[1])};
   if ( ! table.exists()) {
     message.reply(status_codes::NotFound);
     return;
   }
-	
-	/********************* 
-	**CODE ADDED - BEGIN**
-	**********************/
-	// paths[0] = ReadEntityAuth | paths[1] = <table name> | paths[2] = <token> | paths[3] = <partition> | paths[4] = <row>
-	if( paths[0] == read_entity_auth ){ // May need to move this body of code around if it interferes with the above or below functions.
+	/*
+		URI Structure:
+		paths[0] = ReadEntityAuth | paths[1] = <table name> | paths[2] = <token> | paths[3] = <partition> | paths[4] = <row>
+	*/
+	if( paths[0] == read_entity_auth ){
 		if(paths.size() < 5){ // Less than four parameters were provided
 			message.reply(status_codes::BadRequest);
 			return;
@@ -224,9 +228,8 @@ void handle_get(http_request message) {
 			return;
 		}
 	}
-	
+	// Get all entities containing all specified properties
 	if(paths[0] == read_entity_admin){
-		// Get all entities containing all specified properties
 		unordered_map<string,string> stored_message = get_json_body(message);
 		if( stored_message.size() > 0 ){
 			table_query query {};
@@ -244,7 +247,6 @@ void handle_get(http_request message) {
 				const table_entity::properties_type& properties = it->properties();
 				for (auto prop_it = properties.begin(); prop_it != properties.end(); ++prop_it) // Cycles through the properties of the current entity
 				{
-					//cout << ", " << prop_it->first << ": " << prop_it->second.str() << endl;
 					unordered_map<string,string>::const_iterator got = stored_message.find(prop_it->first);
 					if( got != stored_message.end() ){ // A property from the JSON body was found in the entity
 						equal++;
@@ -263,9 +265,7 @@ void handle_get(http_request message) {
 			message.reply( status_codes::OK, value::array(key_vec) );
 			return;
 		}
-		/******************** 
-		**CODE ADDED - STOP**
-		********************/
+
 		// GET all entries in table
 		if (paths.size() < 3){
 			table_query query {};
@@ -283,11 +283,11 @@ void handle_get(http_request message) {
 			return;
 		}
 		
-		/********************* 
-		**CODE ADDED - BEGIN**
-		**********************/
 		// GET all entities from a specific partition
-		// paths[0] = ReadEntityAdmin | paths[1] = <table name> | paths[2] = <partition> | paths[3] = <row>
+		/*
+			URI Structure:
+			paths[0] = ReadEntityAdmin | paths[1] = <table name> | paths[2] = <partition> | paths[3] = <row>
+		*/
 		if( paths[3] == "*" ){
 				table_query query {};
 				table_query_iterator end;
@@ -312,10 +312,6 @@ void handle_get(http_request message) {
 				message.reply(status_codes::OK, value::array(key_vec));
 				return;
 		}
-		
-		/******************** 
-		**CODE ADDED - STOP**
-		********************/
 	}
 
   // GET specific entry: Partition == paths[3], Row == paths[4]
@@ -337,16 +333,17 @@ void handle_get(http_request message) {
   
   // If the entity has any properties, return them as JSON
   prop_vals_t values (get_properties(properties));
-  if (values.size() > 0)
+  if (values.size() > 0){
     message.reply(status_codes::OK, value::object(values));
-  else
+	}
+  else{
     message.reply(status_codes::OK);
-	
+	}
 }
 
 /*
-  Top-level routine for processing all HTTP POST requests.
- */
+	Top-level routine for processing all HTTP POST requests.
+*/
 void handle_post(http_request message) {
   string path {uri::decode(message.relative_uri().path())};
   cout << endl << "**** POST " << path << endl;
@@ -375,9 +372,9 @@ void handle_post(http_request message) {
   }
 }
 
-/*
-  Top-level routine for processing all HTTP PUT requests.
- */
+	/*
+		Top-level routine for processing all HTTP PUT requests.
+	*/
 void handle_put(http_request message) {
   string path {uri::decode(message.relative_uri().path())};
   cout << endl << "**** PUT " << path << endl;
@@ -402,9 +399,7 @@ void handle_put(http_request message) {
   }
 	
   unordered_map<string,string> stored_message = get_json_body(message);
-	/********************* 
-	**CODE ADDED - BEGIN**
-	**********************/
+
 	if( paths[0] == add_property_admin ){
 		if(stored_message.size() == 0) message.reply(status_codes::BadRequest); // No JSON object passed in
 		table_query query {};
@@ -447,21 +442,18 @@ void handle_put(http_request message) {
 		return;
 	}
 	
-	if( paths[0] == update_entity_auth ){ // May need to move this body of code around if it interferes with the above or below functions.
+	if( paths[0] == update_entity_auth ){
 				status_code token;
 				token = update_with_token(message, tables_endpoint, stored_message);
 				if(token == status_codes::Forbidden){
-					// cout << "***Forbidden" << endl;
 					message.reply(status_codes::Forbidden);
 					return;
 				}
 				else if(token == status_codes::InternalError){
-					// cout << "***Internal Error" << endl;
 					message.reply(status_codes::InternalError);
 					return;
 				}
         else if(token == status_codes::NotFound){
-					 // cout << "***Not Found" << endl;
            message.reply(status_codes::NotFound);
            return;
         }
@@ -498,11 +490,6 @@ void handle_put(http_request message) {
 		return;
 	}
 	
-	
-	/******************** 
-	**CODE ADDED - STOP**
-	********************/
-	
   table_entity entity {paths[2], paths[3]};
 
   // Update entity
@@ -533,7 +520,7 @@ void handle_put(http_request message) {
 
 /*
   Top-level routine for processing all HTTP DELETE requests.
- */
+*/
 void handle_delete(http_request message) {
   string path {uri::decode(message.relative_uri().path())};
   cout << endl << "**** DELETE " << path << endl;
@@ -557,6 +544,7 @@ void handle_delete(http_request message) {
     table_cache.delete_entry(table_name);
     message.reply(status_codes::OK);
   }
+	
   // Delete entity
   else if (paths[0] == delete_entity) {
     // For delete entity, also need partition and row
@@ -589,7 +577,7 @@ void handle_delete(http_request message) {
   which processes each request asynchronously.
   
   Wait for a carriage return, then shut the server down.
- */
+*/
 int main (int argc, char const * argv[]) {
 
   http_listener listener {def_url}; // Acknowledges the requests sent to the server; If the below did not exist, it would receive the requests but wouldn't do anything
