@@ -132,12 +132,12 @@ void handle_post(http_request message) {
 			if( got != stored_message.end() ){
 				all_friends = got->second;
 			}
-			string current_friend {}; // Parsing out the first friend from the string of all the friends this user has
-			if(all_friends.find("|") == string::npos){
+			string current_friend {};
+			if(all_friends.find("|") == string::npos){ // This user only has one friend
 				current_friend = all_friends;
 			}
 			else{
-				current_friend = all_friends.substr( 0, all_friends.find("|") );
+				current_friend = all_friends.substr( 0, all_friends.find("|") ); // The first of the multiple friends this user has
 			}
 			string current_country {};
 			string current_name {};

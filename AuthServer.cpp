@@ -28,7 +28,6 @@ using azure::storage::table_operation;
 using azure::storage::table_request_options;
 using azure::storage::table_result;
 using azure::storage::table_shared_access_policy;
-// Added these two in
 using azure::storage::table_query;
 using azure::storage::table_query_iterator;
 
@@ -71,13 +70,13 @@ const string get_update_data {"GetUpdateData"};
 
 /*
   Cache of opened tables
- */
+*/
 TableCache table_cache {};
 
 /*
   Convert properties represented in Azure Storage type
   to prop_str_vals_t type.
- */
+*/
 prop_str_vals_t get_string_properties (const table_entity::properties_type& properties) {
   prop_str_vals_t values {};
   for (const auto v : properties) {
@@ -99,7 +98,7 @@ prop_str_vals_t get_string_properties (const table_entity::properties_type& prop
   Note that all types of JSON values are returned as strings.
   Use C++ conversion utilities to convert to numbers or dates
   as necessary.
- */
+*/
 unordered_map<string,string> get_json_body(http_request message) {  
   unordered_map<string,string> results {};
   const http_headers& headers {message.headers()};
@@ -142,7 +141,7 @@ unordered_map<string,string> get_json_body(http_request message) {
     For read and update: 
       table_shared_access_policy::permissions::read |
       table_shared_access_policy::permissions::update
- */
+*/
 pair<status_code,string> do_get_token (const cloud_table& data_table,
                    const string& partition,
                    const string& row,
@@ -176,7 +175,7 @@ pair<status_code,string> do_get_token (const cloud_table& data_table,
 
 /*
   Top-level routine for processing all HTTP GET requests.
- */
+*/
 void handle_get(http_request message) { 
   string path {uri::decode(message.relative_uri().path())};
   cout << endl << "**** AuthServer GET " << path << endl;

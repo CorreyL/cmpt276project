@@ -246,9 +246,8 @@ void handle_put(http_request message){
 		}
 		
 		string already_exists {paths[2]+";"+paths[3]};
-		
-		if(current_friends.find(already_exists) != string::npos){
-			message.reply(status_codes::OK);
+		if(current_friends.find(already_exists) != string::npos){ 
+			message.reply(status_codes::OK); // The user trying to be added as a friend is already a friend
 			return;
 		}
 		
@@ -279,7 +278,7 @@ void handle_put(http_request message){
 		for (const auto& v : check_friends.second.as_object()){
 			if(v.first == "Friends") check_for_no_friends = v.second.as_string();
 		}
-		if( (check_friends.second.size() == 0) || (check_for_no_friends == "") ){ // User has no friends
+		if( (check_friends.second.size() == 0) || (check_for_no_friends == "") ){ // User has no friends, thus we can return without altering the friend list
 			message.reply(status_codes::OK);
 			return;
 		}
